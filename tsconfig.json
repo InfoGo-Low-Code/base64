@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "strict": true,
+    "allowSyntheticDefaultImports": true
+  }
+}
