@@ -3,6 +3,7 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorResponseSchema'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
+import { basename } from 'node:path'
 
 export function urlToBase64(app: FastifyZodTypedInstance) {
   app.post(
@@ -15,6 +16,7 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
         response: {
           200: z.object({
             base64: z.string(),
+            filename: z.string(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -29,9 +31,11 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
           responseType: 'arraybuffer',
         })
 
+        const filename = basename(new URL(url).pathname)
+
         const base64String = Buffer.from(data).toString('base64')
 
-        return reply.send({ base64: base64String })
+        return reply.send({ base64: base64String, filename })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
