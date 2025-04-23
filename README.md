@@ -19,6 +19,14 @@ Esse projeto utiliza as seguintes dependências e ferramentas:
 - [Axios](https://axios-http.com)
 - [ESLint](https://eslint.org)
 
+## Licença
+Esse projeto está sob a proteção da licença: CC BY-NC 4.0
+
+Permissões:
+- ✅ Uso pessoal e educacional
+- ✅ Modificação e distribuição com atribuição
+- ❌ Proíbe uso comercial
+
 ## 💻 Acesse o projeto local
 ### ✅ Requisitos
 Antes de começar, você precisa ter o [Git](https://git-scm.com/downloads) e o [Node.js](https://nodejs.org/en/download) instalados.
