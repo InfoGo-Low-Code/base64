@@ -12,11 +12,13 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
       schema: {
         body: z.object({
           url: z.string().url(),
+          banco: z.string()
         }),
         response: {
           200: z.object({
             base64: z.string(),
             filename: z.string(),
+            banco: z.string(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -24,7 +26,7 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { url } = request.body
+      const { url, banco } = request.body
 
       try {
         const { data } = await app.axios.get(url, {
@@ -35,7 +37,7 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
 
         const base64String = Buffer.from(data).toString('base64')
 
-        return reply.send({ base64: base64String, filename })
+        return reply.send({ base64: base64String, filename, banco })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
