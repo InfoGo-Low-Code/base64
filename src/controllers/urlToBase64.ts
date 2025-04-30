@@ -19,6 +19,8 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
             base64: z.string(),
             filename: z.string(),
             banco: z.string(),
+            status: z.number(),
+            status_texto: z.string(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -37,7 +39,11 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
 
         const base64String = Buffer.from(data).toString('base64')
 
-        return reply.send({ base64: base64String, filename, banco })
+        const status = 0
+
+        const status_texto = 'PENDENTE'
+
+        return reply.send({ base64: base64String, filename, banco, status, status_texto })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
