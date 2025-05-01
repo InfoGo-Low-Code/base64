@@ -12,7 +12,8 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
       schema: {
         body: z.object({
           url: z.string().url(),
-          banco: z.string()
+          banco: z.string(),
+          empresa: z.string(),
         }),
         response: {
           200: z.object({
@@ -21,6 +22,7 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
             banco: z.string(),
             status: z.number(),
             status_texto: z.string(),
+            empresa: z.string(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -28,7 +30,7 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { url, banco } = request.body
+      const { url, banco, empresa } = request.body
 
       try {
         const { data } = await app.axios.get(url, {
@@ -43,7 +45,7 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
 
         const status_texto = 'PENDENTE'
 
-        return reply.send({ base64: base64String, filename, banco, status, status_texto })
+        return reply.send({ base64: base64String, filename, banco, status, status_texto, empresa })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
