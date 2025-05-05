@@ -13,6 +13,7 @@ import { fastifyMultipart } from './plugins/fastifyMultipart'
 import { fastifySwagger } from './plugins/fastifySwagger'
 import { fastifySwaggerUi } from './plugins/fastifySwaggerUi'
 import { urlToBase64 } from './controllers/urlToBase64'
+import { returnExcelDataEckermann } from './controllers/returnExcelDataEckermann'
 
 export const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -31,3 +32,4 @@ fastifyAxios(app)
 app.register(uploadArchive)
 app.register(fileToBase64)
 app.register(urlToBase64)
+app.register(returnExcelDataEckermann)
