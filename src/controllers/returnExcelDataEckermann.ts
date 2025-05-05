@@ -9,22 +9,26 @@ import {
   mkdirSync,
   readFileSync,
   unlinkSync,
+  writeFileSync,
 } from 'node:fs'
-import { pipeline } from 'node:stream/promises'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 
 import { readFile, utils } from 'xlsx'
 import { planilhaHoEckermannResponse, PlanilhaHoEckermannResponse } from '@/schemas/planilhaHoEckermannResponse'
 import { PlanilhaHoEckermannBody } from '@/schemas/planilhaHoEckermannBody'
 import { randomUUID } from 'node:crypto'
-import { returnExcelDataBodySchema } from '@/schemas/returnExcelDataBodySchema'
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
+import { basename } from 'node:path'
 
 export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
   app.post(
     '/returnExcelDataEckermann',
     {
       schema: {
+        body: z.object({
+          url: z.string().url(),
+          empresa: z.string(),
+        }),
         response: {
           200: z.object({
             register_amount: z.number(),
@@ -36,54 +40,48 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const file = await request.file()
-
-      const { empresa: { value: empresa } } = returnExcelDataBodySchema.parse(file?.fields)
-
-      if (!file || file.filename === '') {
-        return reply.status(400).send({
-          statusCode: 400,
-          message: 'File is missing',
-          details: [
-            {
-              path: ['file'],
-              message: 'Expected "file" received "undefined"',
-            },
-          ],
-        })
-      }
+      const { empresa, url } = request.body
 
       if (!existsSync('./uploads')) {
         mkdirSync('./uploads', { recursive: true })
       }
 
-      const filePath = `./uploads/${file.filename}`
-      await pipeline(file.file, createWriteStream(filePath))
-
       try {
+        const { data } = await app.axios.get(url, {
+          responseType: 'arraybuffer',
+        })
+
+        const filename = basename(new URL(url).pathname)
+        const filePath = `./uploads/${filename}`
+
+        writeFileSync(filePath, data)
+
         const workbook = readFile(filePath)
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        const dataXlsx: PlanilhaHoEckermannBody[] = utils.sheet_to_json(worksheet, {
-          header: [
-            'CLIENTE',
-            'CARTEIRA',
-            'DESCRIÇÃO DOS HONORÁRIOS',
-            'DATA DO CRÉDITO',
-            'CÓDIGO/NOME DE IDENTIFICAÇÃO',
-            'VALOR',
-            'N. DO RECIBO/PARCELA',
-            'DATA',
-            'PAGO',
-            'FONTE PAGADORA',
-            'BANCO',
-            'SÓCIO'
-          ],
-          range: 1
-        })
+        const dataXlsx: PlanilhaHoEckermannBody[] = utils.sheet_to_json(
+          worksheet,
+          {
+              header: [
+              'CLIENTE',
+              'CARTEIRA',
+              'DESCRIÇÃO DOS HONORÁRIOS',
+              'DATA DO CRÉDITO',
+              'CÓDIGO/NOME DE IDENTIFICAÇÃO',
+              'VALOR',
+              'N. DO RECIBO/PARCELA',
+              'DATA',
+              'PAGO',
+              'FONTE PAGADORA',
+              'BANCO',
+              'SÓCIO'
+            ],
+            range: 1
+          }
+        )
 
         const slicedDataXlsx = dataXlsx.slice(0, -3)
-
+        
         const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.map((line) => {
           const data_pagamento = line.DATA ? excelDateToJSDate(line.DATA) : 'Não informado'
           const data_vencimento =
@@ -117,8 +115,6 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
 
         return reply.send({ register_amount, excel })
       } catch (error) {
-        unlinkSync(filePath)
-
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
             return validation.params.issue
