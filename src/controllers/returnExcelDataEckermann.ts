@@ -27,6 +27,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
       schema: {
         response: {
           200: z.object({
+            register_amount: z.number(),
             excel: z.array(planilhaHoEckermannResponse),
           }),
           400: zodErrorBadRequestResponseSchema,
@@ -112,7 +113,9 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
 
         unlinkSync(filePath)
 
-        return reply.send({ excel })
+        const register_amount = excel.length
+
+        return reply.send({ register_amount, excel })
       } catch (error) {
         unlinkSync(filePath)
 
