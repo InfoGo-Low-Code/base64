@@ -5,20 +5,14 @@ export const planilhaHoEckermannResponse = z.object({
   cliente: z.string(),
   carteira: z.string(),
   descricao_honorario: z.string(),
-  data_vencimento: z.union([
-    z.date(),
-    z.string(),
-  ]),
+  data_vencimento: z.date().optional(),
   codigo_identificacao: z.string(),
   valor: z.number(),
   recibo_parcela: z.string(),
   status: z.string(),
   fonte_pagadora: z.string(),
   banco: z.string(),
-  data_pagamento: z.union([
-    z.date(),
-    z.string(),
-  ]),
+  data_pagamento: z.date().optional(),
   socio: z.string(),
   empresa: z.string(),
 })

@@ -85,12 +85,12 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
         const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.map((line) => {
           const data_pagamento = line.DATA
             ? excelDateToJSDate(line.DATA)
-            : 'Não informado'
+            : undefined
 
           const data_vencimento =
             typeof line['DATA DO CRÉDITO'] === 'number'
               ? excelDateToJSDate(line['DATA DO CRÉDITO'])
-              : 'Não informado'
+              : undefined
 
           const fonte_pagadora = line['FONTE PAGADORA'] === '?'
             ? 'Não informado'
