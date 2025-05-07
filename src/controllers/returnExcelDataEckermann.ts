@@ -116,6 +116,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
             data_pagamento,
             socio: line.SOCIO ? line.SOCIO : 'Não informado',
             empresa,
+            valor_validado: 0,
           }
 
           return formattedLine

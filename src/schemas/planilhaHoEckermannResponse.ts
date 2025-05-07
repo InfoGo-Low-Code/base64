@@ -15,6 +15,7 @@ export const planilhaHoEckermannResponse = z.object({
   data_pagamento: z.date().optional(),
   socio: z.string(),
   empresa: z.string(),
+  valor_validado: z.number(),
 })
 
 export type PlanilhaHoEckermannResponse = z.infer<typeof planilhaHoEckermannResponse>
