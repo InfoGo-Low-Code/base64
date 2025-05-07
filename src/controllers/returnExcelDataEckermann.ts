@@ -112,7 +112,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
             : line['FONTE PAGADORA']
 
           const recibo_parcela =
-            line['N. DO RECIBO/PARCELA'] === '?' || line['N. DO RECIBO/PARCELA']
+            line['N. DO RECIBO/PARCELA'] === '?' || !line['N. DO RECIBO/PARCELA']
               ? 'Não informado'
               : line['N. DO RECIBO/PARCELA']
 
