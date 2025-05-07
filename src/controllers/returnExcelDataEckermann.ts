@@ -89,12 +89,12 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               : line.CLIENTE
 
           const carteira =
-            line.CARTEIRA === '?'|| line.CARTEIRA
+            line.CARTEIRA === '?'|| !line.CARTEIRA
               ? 'Não informado'
               : line.CARTEIRA
 
           const descricao_honorario =
-            line['DESCRIÇÃO DOS HONORÁRIOS'] === '?' || line['DESCRIÇÃO DOS HONORÁRIOS']
+            line['DESCRIÇÃO DOS HONORÁRIOS'] === '?' || !line['DESCRIÇÃO DOS HONORÁRIOS']
               ? 'Não informado'
               : line['DESCRIÇÃO DOS HONORÁRIOS']
 
