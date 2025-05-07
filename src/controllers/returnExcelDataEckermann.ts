@@ -62,7 +62,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
         const dataXlsx: PlanilhaHoEckermannBody[] = utils.sheet_to_json(
           worksheet,
           {
-              header: [
+            header: [
               'CLIENTE',
               'CARTEIRA',
               'DESCRIÇÃO DOS HONORÁRIOS',
@@ -83,11 +83,23 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
         const slicedDataXlsx = dataXlsx.slice(0, -3)
         
         const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.map((line) => {
-          const data_pagamento = line.DATA ? excelDateToJSDate(line.DATA) : 'Não informado'
+          const data_pagamento = line.DATA
+            ? excelDateToJSDate(line.DATA)
+            : 'Não informado'
+
           const data_vencimento =
             typeof line['DATA DO CRÉDITO'] === 'number'
               ? excelDateToJSDate(line['DATA DO CRÉDITO'])
               : 'Não informado'
+
+          const fonte_pagadora = line['FONTE PAGADORA'] === '?'
+            ? 'Não informado'
+            : line['FONTE PAGADORA']
+
+          const recibo_parcela =
+            line['N. DO RECIBO/PARCELA'] === '?' || line['N. DO RECIBO/PARCELA']
+              ? 'Não informado'
+              : line['N. DO RECIBO/PARCELA']
 
           const formattedLine = {
             id: randomUUID(),
@@ -97,9 +109,9 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
             data_vencimento,
             codigo_identificacao: line['CÓDIGO/NOME DE IDENTIFICAÇÃO'],
             valor: line.VALOR,
-            recibo_parcela: line['N. DO RECIBO/PARCELA'],
+            recibo_parcela,
             status: line.PAGO === 'OK' ? 'PAGO' : 'PENDENTE',
-            fonte_pagadora: line['FONTE PAGADORA'],
+            fonte_pagadora,
             banco: line.BANCO ? line.BANCO : 'Não informado',
             data_pagamento,
             socio: line.SOCIO ? line.SOCIO : 'Não informado',
