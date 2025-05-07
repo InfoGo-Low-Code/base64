@@ -83,6 +83,21 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
         const slicedDataXlsx = dataXlsx.slice(0, -3)
         
         const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.map((line) => {
+          const cliente =
+            line.CLIENTE === '?' || !line.CLIENTE
+              ? 'Não informado'
+              : line.CLIENTE
+
+          const carteira =
+            line.CARTEIRA === '?'|| line.CARTEIRA
+              ? 'Não informado'
+              : line.CARTEIRA
+
+          const descricao_honorario =
+            line['DESCRIÇÃO DOS HONORÁRIOS'] === '?' || line['DESCRIÇÃO DOS HONORÁRIOS']
+              ? 'Não informado'
+              : line['DESCRIÇÃO DOS HONORÁRIOS']
+
           const data_pagamento = line.DATA
             ? excelDateToJSDate(line.DATA)
             : undefined
@@ -103,9 +118,9 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
 
           const formattedLine = {
             id: randomUUID(),
-            cliente: line.CLIENTE,
-            carteira: line.CARTEIRA,
-            descricao_honorario: line['DESCRIÇÃO DOS HONORÁRIOS'],
+            cliente,
+            carteira,
+            descricao_honorario,
             data_vencimento,
             codigo_identificacao: line['CÓDIGO/NOME DE IDENTIFICAÇÃO'],
             valor: line.VALOR,
