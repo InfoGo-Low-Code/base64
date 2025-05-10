@@ -45,7 +45,14 @@ export function urlToBase64(app: FastifyZodTypedInstance) {
 
         const status_texto = 'PENDENTE'
 
-        return reply.send({ base64: base64String, filename, banco, status, status_texto, empresa })
+        return reply.send({
+          base64: base64String,
+          filename,
+          banco,
+          status,
+          status_texto,
+          empresa,
+        })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {

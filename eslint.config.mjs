@@ -12,7 +12,12 @@ const compat = new FlatCompat({
 /** @type {import('eslint').Linter.Config[]} */
 const eslintConfig = [
   ...compat.extends('@rocketseat/eslint-config/node'),
-  { ignores: ['dist', 'node_modules'], files: ['src'] },
+  {
+    ignores: ['dist', 'node_modules'],
+    rules: {
+      camelcase: 'off'
+    }
+  },
 ]
 
 export default eslintConfig

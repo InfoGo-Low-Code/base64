@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod'
 
 export const planilhaHoEckermannResponse = z.object({
   id: z.string(),
@@ -18,4 +18,6 @@ export const planilhaHoEckermannResponse = z.object({
   valor_validado: z.number(),
 })
 
-export type PlanilhaHoEckermannResponse = z.infer<typeof planilhaHoEckermannResponse>
+export type PlanilhaHoEckermannResponse = z.infer<
+  typeof planilhaHoEckermannResponse
+>

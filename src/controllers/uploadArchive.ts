@@ -55,7 +55,7 @@ export function uploadArchive(app: FastifyZodTypedInstance) {
 
         await app.axios.post('/receive_excel', {
           filename,
-          excel: base64String
+          excel: base64String,
         })
 
         unlinkSync(filePath)

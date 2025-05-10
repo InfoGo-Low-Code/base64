@@ -3,18 +3,14 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorResponseSchema'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 
-import {
-  existsSync,
-  createWriteStream,
-  mkdirSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 
 import { readFile, utils } from 'xlsx'
-import { planilhaHoEckermannResponse, PlanilhaHoEckermannResponse } from '@/schemas/planilhaHoEckermannResponse'
+import {
+  planilhaHoEckermannResponse,
+  PlanilhaHoEckermannResponse,
+} from '@/schemas/planilhaHoEckermannResponse'
 import { PlanilhaHoEckermannBody } from '@/schemas/planilhaHoEckermannBody'
 import { randomUUID } from 'node:crypto'
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
@@ -74,68 +70,73 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               'PAGO',
               'FONTE PAGADORA',
               'BANCO',
-              'SÓCIO'
+              'SÓCIO',
             ],
-            range: 1
-          }
+            range: 1,
+          },
         )
 
         const slicedDataXlsx = dataXlsx.slice(0, -3)
-        
-        const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.map((line) => {
-          const cliente =
-            line.CLIENTE === '?' || !line.CLIENTE
-              ? 'Não informado'
-              : line.CLIENTE
 
-          const carteira =
-            line.CARTEIRA === '?'|| !line.CARTEIRA
-              ? 'Não informado'
-              : line.CARTEIRA
+        const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.map(
+          (line) => {
+            const cliente =
+              line.CLIENTE === '?' || !line.CLIENTE
+                ? 'Não informado'
+                : line.CLIENTE
 
-          const descricao_honorario =
-            line['DESCRIÇÃO DOS HONORÁRIOS'] === '?' || !line['DESCRIÇÃO DOS HONORÁRIOS']
-              ? 'Não informado'
-              : line['DESCRIÇÃO DOS HONORÁRIOS']
+            const carteira =
+              line.CARTEIRA === '?' || !line.CARTEIRA
+                ? 'Não informado'
+                : line.CARTEIRA
 
-          const data_pagamento = line.DATA
-            ? excelDateToJSDate(line.DATA)
-            : undefined
+            const descricao_honorario =
+              line['DESCRIÇÃO DOS HONORÁRIOS'] === '?' ||
+              !line['DESCRIÇÃO DOS HONORÁRIOS']
+                ? 'Não informado'
+                : line['DESCRIÇÃO DOS HONORÁRIOS']
 
-          const data_vencimento =
-            typeof line['DATA DO CRÉDITO'] === 'number'
-              ? excelDateToJSDate(line['DATA DO CRÉDITO'])
+            const data_pagamento = line.DATA
+              ? excelDateToJSDate(line.DATA)
               : undefined
 
-          const fonte_pagadora = line['FONTE PAGADORA'] === '?'
-            ? 'Não informado'
-            : line['FONTE PAGADORA']
+            const data_vencimento =
+              typeof line['DATA DO CRÉDITO'] === 'number'
+                ? excelDateToJSDate(line['DATA DO CRÉDITO'])
+                : undefined
 
-          const recibo_parcela =
-            line['N. DO RECIBO/PARCELA'] === '?' || !line['N. DO RECIBO/PARCELA']
-              ? 'Não informado'
-              : line['N. DO RECIBO/PARCELA']
+            const fonte_pagadora =
+              line['FONTE PAGADORA'] === '?'
+                ? 'Não informado'
+                : line['FONTE PAGADORA']
 
-          const formattedLine = {
-            id: randomUUID(),
-            cliente,
-            carteira,
-            descricao_honorario,
-            data_vencimento,
-            codigo_identificacao: line['CÓDIGO/NOME DE IDENTIFICAÇÃO'],
-            valor: line.VALOR,
-            recibo_parcela,
-            status: line.PAGO === 'OK' ? 'PAGO' : 'PENDENTE',
-            fonte_pagadora,
-            banco: line.BANCO ? line.BANCO : 'Não informado',
-            data_pagamento,
-            socio: line.SOCIO ? line.SOCIO : 'Não informado',
-            empresa,
-            valor_validado: 0,
-          }
+            const recibo_parcela =
+              line['N. DO RECIBO/PARCELA'] === '?' ||
+              !line['N. DO RECIBO/PARCELA']
+                ? 'Não informado'
+                : line['N. DO RECIBO/PARCELA']
 
-          return formattedLine
-        })
+            const formattedLine = {
+              id: randomUUID(),
+              cliente,
+              carteira,
+              descricao_honorario,
+              data_vencimento,
+              codigo_identificacao: line['CÓDIGO/NOME DE IDENTIFICAÇÃO'],
+              valor: line.VALOR,
+              recibo_parcela,
+              status: line.PAGO === 'OK' ? 'PAGO' : 'PENDENTE',
+              fonte_pagadora,
+              banco: line.BANCO ? line.BANCO : 'Não informado',
+              data_pagamento,
+              socio: line.SOCIO ? line.SOCIO : 'Não informado',
+              empresa,
+              valor_validado: 0,
+            }
+
+            return formattedLine
+          },
+        )
 
         unlinkSync(filePath)
 
