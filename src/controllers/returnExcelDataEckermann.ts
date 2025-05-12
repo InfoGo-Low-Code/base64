@@ -78,7 +78,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
 
         const slicedDataXlsx = dataXlsx.slice(0, -3)
 
-        const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.map(
+        const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.flatMap(
           (line) => {
             const cliente =
               line.CLIENTE === '?' || !line.CLIENTE
@@ -116,15 +116,13 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
                 ? 'Não informado'
                 : line['N. DO RECIBO/PARCELA']
 
-            const formattedLine = {
-              id: randomUUID(),
+            const baseObject = {
               cliente,
               carteira,
               descricao_honorario,
               data_vencimento,
               codigo_identificacao: line['CÓDIGO/NOME DE IDENTIFICAÇÃO'],
               valor: line.VALOR,
-              recibo_parcela,
               status: line.PAGO === 'OK' ? 'PAGO' : 'PENDENTE',
               fonte_pagadora,
               banco: line.BANCO ? line.BANCO : 'Não informado',
@@ -134,7 +132,69 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               valor_validado: 0,
             }
 
-            return formattedLine
+            if (recibo_parcela.includes('/')) {
+              const [primeiraParcela, segundaParcela] =
+                recibo_parcela.split('/')
+
+              return Array.from(
+                {
+                  length: Number(segundaParcela) - Number(primeiraParcela) + 1,
+                },
+                (_, idx) => {
+                  const vencimento = baseObject.data_vencimento
+                    ? new Date(baseObject.data_vencimento)
+                    : undefined
+
+                  const pagamento =
+                    idx === 0 ? baseObject.data_pagamento : undefined
+
+                  if (vencimento) {
+                    vencimento.setUTCMonth(vencimento.getUTCMonth() + idx)
+                  }
+
+                  return {
+                    ...baseObject,
+                    id: randomUUID(),
+                    data_vencimento: vencimento,
+                    recibo_parcela: `${Number(primeiraParcela) + idx}/${segundaParcela}`,
+                    data_pagamento: pagamento,
+                  }
+                },
+              )
+            }
+
+            if (
+              recibo_parcela !== '?' &&
+              recibo_parcela !== '-' &&
+              recibo_parcela !== 'A DEFINIR'
+            ) {
+              return Array.from({ length: 12 }, (_, idx) => {
+                const vencimento = baseObject.data_vencimento
+                  ? new Date(baseObject.data_vencimento)
+                  : undefined
+
+                if (vencimento) {
+                  vencimento.setUTCMonth(vencimento.getUTCMonth() + idx)
+                }
+
+                const pagamento =
+                  idx === 0 ? baseObject.data_pagamento : undefined
+
+                return {
+                  ...baseObject,
+                  id: randomUUID(),
+                  data_vencimento: vencimento,
+                  recibo_parcela,
+                  data_pagamento: pagamento,
+                }
+              })
+            }
+
+            return {
+              ...baseObject,
+              id: randomUUID(),
+              recibo_parcela,
+            }
           },
         )
 
