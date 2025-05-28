@@ -5,6 +5,7 @@ import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRe
 import { base64Decode } from 'base64topdf'
 import { join } from 'node:path'
 import { createReadStream, existsSync, mkdirSync, unlinkSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 
 export function base64ToPDF(app: FastifyZodTypedInstance) {
   app.post(
@@ -13,7 +14,6 @@ export function base64ToPDF(app: FastifyZodTypedInstance) {
       schema: {
         body: z.object({
           base64: z.string(),
-          filename: z.string(),
         }),
         response: {
           200: {
@@ -25,7 +25,7 @@ export function base64ToPDF(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { base64, filename } = request.body
+      const { base64 } = request.body
 
       const cleanBase64 = base64.includes(',') ? base64.split(',')[1] : base64
 
@@ -33,8 +33,8 @@ export function base64ToPDF(app: FastifyZodTypedInstance) {
         mkdirSync(`./uploads`, { recursive: true })
       }
 
-      const fullFilename = `${filename}.pdf`
-      const outputPath = join('./uploads', fullFilename)
+      const filename= `${randomUUID()}.pdf`
+      const outputPath = join('./uploads', filename)
 
       base64Decode(cleanBase64, outputPath)
 
@@ -43,7 +43,7 @@ export function base64ToPDF(app: FastifyZodTypedInstance) {
       return reply
       .status(200)
       .header('Content-Type', 'application/pdf')
-      .header('Content-Disposition', `attachment; filename="${fullFilename}"`)
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
       .send(download)
     },
   )
