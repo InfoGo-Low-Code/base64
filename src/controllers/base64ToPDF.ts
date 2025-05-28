@@ -40,13 +40,11 @@ export function base64ToPDF(app: FastifyZodTypedInstance) {
 
       const download = createReadStream(outputPath)
       
-      reply
+      return reply
       .status(200)
       .header('Content-Type', 'application/pdf')
       .header('Content-Disposition', `attachment; filename="${fullFilename}"`)
       .send(download)
-
-      unlinkSync(outputPath)
     },
   )
 }
