@@ -14,6 +14,8 @@ import { fastifySwagger } from './plugins/fastifySwagger'
 import { fastifySwaggerUi } from './plugins/fastifySwaggerUi'
 import { urlToBase64 } from './controllers/urlToBase64'
 import { returnExcelDataEckermann } from './controllers/returnExcelDataEckermann'
+import { base64ToPDF } from './controllers/base64ToPDF'
+import { fastifyCors } from './plugins/fastifyCors'
 
 export const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -24,6 +26,7 @@ app.setSerializerCompiler(serializerCompiler)
 
 app.register(fastifySensible)
 
+fastifyCors(app)
 fastifyMultipart(app)
 fastifySwagger(app)
 fastifySwaggerUi(app)
@@ -33,3 +36,4 @@ app.register(uploadArchive)
 app.register(fileToBase64)
 app.register(urlToBase64)
 app.register(returnExcelDataEckermann)
+app.register(base64ToPDF)

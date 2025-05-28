@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fastify/cors':
+        specifier: ^11.0.1
+        version: 11.0.1
       '@fastify/multipart':
         specifier: ^9.0.3
         version: 9.0.3
@@ -20,6 +23,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^5.2.2
         version: 5.2.2
+      base64topdf:
+        specifier: ^1.1.8
+        version: 1.1.8
       excel-date-to-js:
         specifier: ^1.1.5
         version: 1.1.5
@@ -48,6 +54,9 @@ importers:
       '@rocketseat/eslint-config':
         specifier: ^2.2.2
         version: 2.2.2(eslint@9.25.1)(typescript@5.8.3)
+      '@types/base64topdf':
+        specifier: ^1.1.2
+        version: 1.1.2
       '@types/node':
         specifier: ^22.14.1
         version: 22.14.1
@@ -266,6 +275,9 @@ packages:
   '@fastify/busboy@3.1.1':
     resolution: {integrity: sha512-5DGmA8FTdB2XbDeEwc/5ZXBl6UbBAyBOOLlPuBnZ/N1SwdH9Ii+cOX3tBROlDgcTXxjOYnLMVoKk9+FXAw0CJw==}
 
+  '@fastify/cors@11.0.1':
+    resolution: {integrity: sha512-dmZaE7M1f4SM8ZZuk5RhSsDJ+ezTgI7v3HHRj8Ow9CneczsPLZV6+2j2uwdaSLn8zhTv6QV0F4ZRcqdalGx1pQ==}
+
   '@fastify/deepmerge@2.0.2':
     resolution: {integrity: sha512-3wuLdX5iiiYeZWP6bQrjqhrcvBIf0NHbQH1Ur1WbHvoiuTYUEItgygea3zs8aHpiitn0lOB8gX20u1qO+FDm7Q==}
 
@@ -480,6 +492,9 @@ packages:
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
+  '@types/base64topdf@1.1.2':
+    resolution: {integrity: sha512-dvFUUs4xuEY42F59pzYEqDxboETcsNFJtz/9llB7czsgPSzRpJ6x3CByq8Kt2eezG7mzcYxri1dD0J+fQTxp4w==}
+
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
 
@@ -680,6 +695,9 @@ packages:
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  base64topdf@1.1.8:
+    resolution: {integrity: sha512-nKuSq9EiuupC93SP0f5Hm5WYlgtPnmc1CGtuXXFChvoKazsYdanLcUYUSDaQhrY+VHKrLR8svcbpN2bHnO793w==}
 
   brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
@@ -1166,6 +1184,9 @@ packages:
   frac@1.1.2:
     resolution: {integrity: sha512-w/XBfkibaTl3YDqASwfDUqkna4Z2p9cFSr1aHDt0WoMTECnRfBOv2WArlZILlqgWlmdIlALXGpM2AOhEk5W3IA==}
     engines: {node: '>=0.8'}
+
+  fs@0.0.1-security:
+    resolution: {integrity: sha512-3XY9e1pP0CVEUCdj5BmfIZxRBTSDycnbqhIOGec9QYtmVH2fbLpj86CFWkrNOkt/Fvty4KZG5lTglL9j/gJ87w==}
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -2286,6 +2307,11 @@ snapshots:
 
   '@fastify/busboy@3.1.1': {}
 
+  '@fastify/cors@11.0.1':
+    dependencies:
+      fastify-plugin: 5.0.1
+      toad-cache: 3.7.0
+
   '@fastify/deepmerge@2.0.2': {}
 
   '@fastify/error@4.1.0': {}
@@ -2500,6 +2526,8 @@ snapshots:
     optional: true
 
   '@rtsao/scc@1.1.0': {}
+
+  '@types/base64topdf@1.1.2': {}
 
   '@types/estree@1.0.7': {}
 
@@ -2740,6 +2768,10 @@ snapshots:
   axobject-query@4.1.0: {}
 
   balanced-match@1.0.2: {}
+
+  base64topdf@1.1.8:
+    dependencies:
+      fs: 0.0.1-security
 
   brace-expansion@1.1.11:
     dependencies:
@@ -3370,6 +3402,8 @@ snapshots:
   forwarded@0.2.0: {}
 
   frac@1.1.2: {}
+
+  fs@0.0.1-security: {}
 
   fsevents@2.3.3:
     optional: true
