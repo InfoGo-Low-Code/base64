@@ -16,6 +16,7 @@ import { urlToBase64 } from './controllers/urlToBase64'
 import { returnExcelDataEckermann } from './controllers/returnExcelDataEckermann'
 import { base64ToPDF } from './controllers/base64ToPDF'
 import { fastifyCors } from './plugins/fastifyCors'
+import { cofapRoutes } from './controllers/cofap/cofap.routes'
 
 export const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -37,3 +38,4 @@ app.register(fileToBase64)
 app.register(urlToBase64)
 app.register(returnExcelDataEckermann)
 app.register(base64ToPDF)
+app.register(cofapRoutes)

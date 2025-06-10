@@ -4,7 +4,7 @@ import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorRespons
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { base64Decode } from 'base64topdf'
 import { join } from 'node:path'
-import { createReadStream, existsSync, mkdirSync, unlinkSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 
 export function base64ToPDF(app: FastifyZodTypedInstance) {
@@ -33,18 +33,18 @@ export function base64ToPDF(app: FastifyZodTypedInstance) {
         mkdirSync(`./uploads`, { recursive: true })
       }
 
-      const filename= `${randomUUID()}.pdf`
+      const filename = `${randomUUID()}.pdf`
       const outputPath = join('./uploads', filename)
 
       base64Decode(cleanBase64, outputPath)
 
       const download = createReadStream(outputPath)
-      
+
       return reply
-      .status(200)
-      .header('Content-Type', 'application/pdf')
-      .header('Content-Disposition', `attachment; filename="${filename}"`)
-      .send(download)
+        .status(200)
+        .header('Content-Type', 'application/pdf')
+        .header('Content-Disposition', `attachment; filename="${filename}"`)
+        .send(download)
     },
   )
 }
