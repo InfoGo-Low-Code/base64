@@ -4,6 +4,7 @@ import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorRespons
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 import { basename, extname } from 'node:path'
+import { lookup } from 'mime-types'
 
 export function urlFileToBase64(app: FastifyZodTypedInstance) {
   app.post(
@@ -15,7 +16,7 @@ export function urlFileToBase64(app: FastifyZodTypedInstance) {
         }),
         response: {
           200: z.object({
-            contentType: z.string(),
+            contentType: z.union([z.string(), z.boolean()]),
             base64: z.string(),
           }),
           400: zodErrorBadRequestResponseSchema,
@@ -35,11 +36,7 @@ export function urlFileToBase64(app: FastifyZodTypedInstance) {
 
         const extension = extname(filename).replace('.', '').toLowerCase()
 
-        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'tiff', 'ico']
-
-        const contentType = imageExtensions.includes(extension)
-          ? `image/${extension === 'jpg' ? 'jpeg' : extension}`
-          : `application/${extension}`
+        const contentType = lookup(extension)
 
         const base64String = Buffer.from(data).toString('base64')
 
