@@ -6,7 +6,7 @@ import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 
 export function urlToBase64(app: FastifyZodTypedInstance) {
   app.post(
-    '/urlToBase64',
+    '/urlFileToBase64',
     {
       schema: {
         body: z.object({
