@@ -5,6 +5,7 @@ import { cofapComunizados } from './routes/cofapComunizados'
 import { cofapTrocaCodigo } from './routes/cofapTrocaCodigo'
 import { cofapVersoes } from './routes/cofapVersoes'
 import { cofapCrossReferences } from './routes/cofapCrossReferences'
+import { cofapCodigoProdutoSimilar } from './routes/cofapCodigoProdutoSimilar'
 
 export function cofapRoutes(app: FastifyZodTypedInstance) {
   app.register(cofapProdutos)
@@ -13,4 +14,5 @@ export function cofapRoutes(app: FastifyZodTypedInstance) {
   app.register(cofapTrocaCodigo)
   app.register(cofapVersoes)
   app.register(cofapCrossReferences)
+  app.register(cofapCodigoProdutoSimilar)
 }
