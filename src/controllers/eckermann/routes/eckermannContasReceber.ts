@@ -95,8 +95,8 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
         await transaction.commit()
 
         return reply.send({ registrosDuplicados, registrosInseridos })
-      } catch (error) {
-        console.error('Erro ao executar comandos MERGE em batch:', error)
+      } catch (error: any) {
+        return reply.notAcceptable(`Erro ao executar comandos MERGE em batch: ${error.message}`)
       }
     },
   )
