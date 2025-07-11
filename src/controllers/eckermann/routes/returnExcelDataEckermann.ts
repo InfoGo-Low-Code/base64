@@ -12,7 +12,6 @@ import {
   PlanilhaHoEckermannResponse,
 } from '@/schemas/eckermann/planilhaHoEckermannResponse'
 import { PlanilhaHoEckermannBody } from '@/schemas/eckermann/planilhaHoEckermannBody'
-import { randomUUID } from 'node:crypto'
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { basename } from 'node:path'
 import { camposConcat } from '@/utils/camposConcat'
@@ -183,11 +182,13 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
                 const pagamento =
                   idx === 0 ? baseObject.data_pagamento : undefined
 
+                const recibo_parcela_formatado = `${recibo_parcela}-${idx+1}/${12}`
+
                 return {
                   ...baseObject,
-                  id: camposConcat(baseObject, recibo_parcela),
+                  id: camposConcat(baseObject, recibo_parcela_formatado),
                   data_vencimento: vencimento,
-                  recibo_parcela,
+                  recibo_parcela: recibo_parcela_formatado,
                   data_pagamento: pagamento,
                 }
               })

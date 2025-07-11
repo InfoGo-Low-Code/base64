@@ -15,12 +15,11 @@ export function camposConcat(base: any, recibo_parcela: string): string {
     base.data_pagamento?.toISOString?.() || '',
     base.socio,
     base.empresa,
-    base.valor_validado,
   ]
 
   const stringConcat = valores.join('&')
 
   // Gera um hash SHA-256 e corta para os 36 primeiros caracteres
-  const hash = createHash('sha256').update(stringConcat).digest('hex')
-  return hash.substring(0, 36)
+  const hash = stringConcat
+  return hash
 }
