@@ -15,6 +15,7 @@ import { PlanilhaHoEckermannBody } from '@/schemas/eckermann/planilhaHoEckermann
 import { randomUUID } from 'node:crypto'
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { basename } from 'node:path'
+import { camposConcat } from '@/utils/camposConcat'
 
 export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
   app.post(
@@ -152,11 +153,13 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
                     vencimento.setUTCMonth(vencimento.getUTCMonth() + idx)
                   }
 
+                  const recibo_parcela = `${Number(primeiraParcela) + idx}/${segundaParcela}`
+
                   return {
                     ...baseObject,
-                    id: randomUUID(),
+                    id: camposConcat(baseObject, recibo_parcela),
                     data_vencimento: vencimento,
-                    recibo_parcela: `${Number(primeiraParcela) + idx}/${segundaParcela}`,
+                    recibo_parcela,
                     data_pagamento: pagamento,
                   }
                 },
@@ -182,7 +185,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
 
                 return {
                   ...baseObject,
-                  id: randomUUID(),
+                  id: camposConcat(baseObject, recibo_parcela),
                   data_vencimento: vencimento,
                   recibo_parcela,
                   data_pagamento: pagamento,
@@ -192,7 +195,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
 
             return {
               ...baseObject,
-              id: randomUUID(),
+              id: camposConcat(baseObject, recibo_parcela),
               recibo_parcela,
             }
           },
