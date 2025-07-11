@@ -10,15 +10,15 @@ import { readFile, utils } from 'xlsx'
 import {
   planilhaHoEckermannResponse,
   PlanilhaHoEckermannResponse,
-} from '@/schemas/planilhaHoEckermannResponse'
-import { PlanilhaHoEckermannBody } from '@/schemas/planilhaHoEckermannBody'
+} from '@/schemas/eckermann/planilhaHoEckermannResponse'
+import { PlanilhaHoEckermannBody } from '@/schemas/eckermann/planilhaHoEckermannBody'
 import { randomUUID } from 'node:crypto'
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { basename } from 'node:path'
 
 export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
   app.post(
-    '/returnExcelDataEckermann',
+    '/eckermann/returnExcelDataEckermann',
     {
       schema: {
         body: z.object({

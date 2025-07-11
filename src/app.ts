@@ -13,11 +13,11 @@ import { fastifyMultipart } from './plugins/fastifyMultipart'
 import { fastifySwagger } from './plugins/fastifySwagger'
 import { fastifySwaggerUi } from './plugins/fastifySwaggerUi'
 import { urlToBase64 } from './controllers/urlToBase64'
-import { returnExcelDataEckermann } from './controllers/returnExcelDataEckermann'
 import { base64ToPDF } from './controllers/base64ToPDF'
 import { fastifyCors } from './plugins/fastifyCors'
 import { cofapRoutes } from './controllers/cofap/cofap.routes'
 import { urlFileToBase64 } from './controllers/urlFileToBase64'
+import { eckermannRoutes } from './controllers/eckermann/eckermann.routes'
 
 export const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -37,7 +37,7 @@ fastifyAxios(app)
 app.register(uploadArchive)
 app.register(fileToBase64)
 app.register(urlToBase64)
-app.register(returnExcelDataEckermann)
 app.register(base64ToPDF)
 app.register(cofapRoutes)
 app.register(urlFileToBase64)
+app.register(eckermannRoutes)
