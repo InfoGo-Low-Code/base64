@@ -74,7 +74,7 @@ export function parserBb(filePath: string, empresa: string, filename: string): E
        status,
        status_texto,
        empresa,
-       tipo_transacao,
+       tipo_transação: tipo_transacao,
     }
   })
 

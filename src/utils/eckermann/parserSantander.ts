@@ -22,7 +22,7 @@ export function parserSantander(filePath: string, empresa: string, filename: str
     {
       header: [
         'data',
-        'lançamento',
+        'lancamento',
         'conta',
         'valor',
       ],
@@ -30,7 +30,7 @@ export function parserSantander(filePath: string, empresa: string, filename: str
     }
   )
 
-  const formattedData: ExtratoSchema[] = dataXlsx.map((register, idx) => {
+  const formattedData: ExtratoSchema[] = dataXlsx.map((register) => {
     const dataJs = excelDateToJSDate(register.data)
     const data = formatDate(dataJs)
 
@@ -60,7 +60,7 @@ export function parserSantander(filePath: string, empresa: string, filename: str
       status,
       status_texto,
       empresa,
-      tipo_transacao,
+      tipo_transação: tipo_transacao,
     }
   })
 

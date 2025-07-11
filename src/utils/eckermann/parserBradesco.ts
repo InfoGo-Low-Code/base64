@@ -66,7 +66,7 @@ export function parserBradesco(filePath: string, empresa: string, filename: stri
       status,
       status_texto,
       empresa,
-      tipo_transacao,
+      tipo_transação: tipo_transacao,
     }
   })
 

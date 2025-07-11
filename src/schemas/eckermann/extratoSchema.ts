@@ -10,7 +10,7 @@ export const extratoSchema = z.object({
   status: z.number(),
   status_texto: z.string(),
   empresa: z.string(),
-  tipo_transacao: z.string(),
+  tipo_transação: z.string(),
 })
 
 export type ExtratoSchema = z.infer<typeof extratoSchema>

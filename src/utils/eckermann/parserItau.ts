@@ -68,7 +68,7 @@ export function parserItau(filePath: string, empresa: string, filename: string):
       status,
       status_texto,
       empresa,
-      tipo_transacao,
+      tipo_transação: tipo_transacao,
     }
   })
 
