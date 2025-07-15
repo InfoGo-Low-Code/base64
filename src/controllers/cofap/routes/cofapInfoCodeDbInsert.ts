@@ -51,7 +51,7 @@ async function runBatchInChunks(
   table: string,
   db: ConnectionPool,
   chunkSize = 1000,
-): Promise<{ inserted_data: number, execution_time_ms: number }> {
+): Promise<{ inserted_data: number; execution_time_ms: number }> {
   const startTime = new Date()
   let inserted_data = 0
   const chunks = Array.from(
@@ -67,10 +67,7 @@ async function runBatchInChunks(
     try {
       const response = await request.batch(chunk.join('\n'))
       if (Array.isArray(response.rowsAffected)) {
-        inserted_data += response.rowsAffected.reduce(
-          (acc, v) => acc + v,
-          0,
-        )
+        inserted_data += response.rowsAffected.reduce((acc, v) => acc + v, 0)
       }
     } catch (err) {
       console.error(`Erro ao inserir chunk ${i}:`, err)
@@ -118,7 +115,15 @@ export function cofapInfoCodeDbInsert(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { uuid, racionalizados_time_in_ms, comunizados_time_in_ms, troca_codigo_time_in_ms, versoes_time_in_ms, cross_references_time_in_ms, produtos_time_in_ms } = request.body
+      const {
+        uuid,
+        racionalizados_time_in_ms,
+        comunizados_time_in_ms,
+        troca_codigo_time_in_ms,
+        versoes_time_in_ms,
+        cross_references_time_in_ms,
+        produtos_time_in_ms,
+      } = request.body
       const db = await getCofapConnection()
 
       const filePath = `./uploads/${uuid}.json`
@@ -155,44 +160,56 @@ export function cofapInfoCodeDbInsert(app: FastifyZodTypedInstance) {
       const comandosProdutos: string[] = toSQLInsert(produtos, 'PRODUTOS_TESTE')
 
       try {
-        const { execution_time_ms: racionalizadosTime, inserted_data: inserted_racionalizados } = await runBatchInChunks(
+        const {
+          execution_time_ms: racionalizadosTime,
+          inserted_data: inserted_racionalizados,
+        } = await runBatchInChunks(
           comandosRacionalizados,
           'RACIONALIZADOS_TESTE',
           db,
         )
-        const {execution_time_ms: comunizadosTime,inserted_data: inserted_comunizados} = await runBatchInChunks(
+        const {
+          execution_time_ms: comunizadosTime,
+          inserted_data: inserted_comunizados,
+        } = await runBatchInChunks(
           comandosComunizados,
           'COMUNIZADOS_COMUNIZOU_TESTE',
           db,
         )
-        const {execution_time_ms: trocaCodigoTime,inserted_data: inserted_troca_codigo} = await runBatchInChunks(
+        const {
+          execution_time_ms: trocaCodigoTime,
+          inserted_data: inserted_troca_codigo,
+        } = await runBatchInChunks(
           comandosTrocaCodigo,
           'TROCA_CODIGO_TESTE',
           db,
         )
-        const {execution_time_ms: versoesTime,inserted_data: inserted_versoes} = await runBatchInChunks(
-          comandosVersoes,
-          'VERSOES_TESTE',
-          db,
-        )
-        const {execution_time_ms: crossReferencesTime,inserted_data: inserted_cross_references} = await runBatchInChunks(
+        const {
+          execution_time_ms: versoesTime,
+          inserted_data: inserted_versoes,
+        } = await runBatchInChunks(comandosVersoes, 'VERSOES_TESTE', db)
+        const {
+          execution_time_ms: crossReferencesTime,
+          inserted_data: inserted_cross_references,
+        } = await runBatchInChunks(
           comandosCrossReferences,
           'CROSS_REFERENCES_TESTE',
           db,
         )
-        const {execution_time_ms: produtosTime,inserted_data: inserted_produtos} = await runBatchInChunks(
-          comandosProdutos,
-          'PRODUTOS_TESTE',
-          db,
-        )
+        const {
+          execution_time_ms: produtosTime,
+          inserted_data: inserted_produtos,
+        } = await runBatchInChunks(comandosProdutos, 'PRODUTOS_TESTE', db)
 
         unlinkSync(filePath)
 
-        const totalTimeRacionalizados = racionalizadosTime + racionalizados_time_in_ms
+        const totalTimeRacionalizados =
+          racionalizadosTime + racionalizados_time_in_ms
         const totalTimeComunizados = comunizadosTime + comunizados_time_in_ms
         const totalTimeTrocaCodigo = trocaCodigoTime + troca_codigo_time_in_ms
         const totalTimeVersoes = versoesTime + versoes_time_in_ms
-        const totalTimeCrossReferences = crossReferencesTime + cross_references_time_in_ms
+        const totalTimeCrossReferences =
+          crossReferencesTime + cross_references_time_in_ms
         const totalTimeProdutos = produtosTime + produtos_time_in_ms
 
         return reply.send({
