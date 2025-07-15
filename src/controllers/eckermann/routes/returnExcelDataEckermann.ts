@@ -182,7 +182,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
                 const pagamento =
                   idx === 0 ? baseObject.data_pagamento : undefined
 
-                const recibo_parcela_formatado = `${recibo_parcela}-${idx+1}/${12}`
+                const recibo_parcela_formatado = `${recibo_parcela}-${idx + 1}/${12}`
 
                 return {
                   ...baseObject,

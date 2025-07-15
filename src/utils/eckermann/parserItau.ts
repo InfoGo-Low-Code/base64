@@ -1,8 +1,8 @@
-import { ExtratoSchema } from "@/schemas/eckermann/extratoSchema"
-import { readFile, utils } from "xlsx"
-import { z } from "zod"
-import { excelDateToJSDate } from "../parseXlsxDate"
-import { formatDate } from "../formatDate"
+import { ExtratoSchema } from '@/schemas/eckermann/extratoSchema'
+import { readFile, utils } from 'xlsx'
+import { z } from 'zod'
+import { excelDateToJSDate } from '../parseXlsxDate'
+import { formatDate } from '../formatDate'
 
 const excelSchema = z.object({
   data: z.number(),
@@ -14,23 +14,18 @@ const excelSchema = z.object({
 
 type ExcelSchema = z.infer<typeof excelSchema>
 
-export function parserItau(filePath: string, empresa: string, filename: string): ExtratoSchema[] {
+export function parserItau(
+  filePath: string,
+  empresa: string,
+  filename: string,
+): ExtratoSchema[] {
   const workbook = readFile(filePath)
   const sheetName = workbook.SheetNames[0]
   const worksheet = workbook.Sheets[sheetName]
-  const dataXlsx: ExcelSchema[] = utils.sheet_to_json(
-    worksheet,
-    {
-      header: [
-        'data',
-        'lançamento',
-        'agencia_origem',
-        'valor',
-        'saldo',
-      ],
-      range: 10,
-    }
-  )
+  const dataXlsx: ExcelSchema[] = utils.sheet_to_json(worksheet, {
+    header: ['data', 'lançamento', 'agencia_origem', 'valor', 'saldo'],
+    range: 10,
+  })
 
   const filteredDataXlsx = dataXlsx.filter((register) => {
     if (register.valor) {

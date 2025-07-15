@@ -6,15 +6,7 @@ import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRe
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 
-import { readFile, utils } from 'xlsx'
-import {
-  planilhaHoEckermannResponse,
-  PlanilhaHoEckermannResponse,
-} from '@/schemas/eckermann/planilhaHoEckermannResponse'
-import { PlanilhaHoEckermannBody } from '@/schemas/eckermann/planilhaHoEckermannBody'
-import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { basename } from 'node:path'
-import { camposConcat } from '@/utils/camposConcat'
 import { parserBb } from '@/utils/eckermann/parserBb'
 import { ExtratoSchema, extratoSchema } from '@/schemas/eckermann/extratoSchema'
 import { parserBradesco } from '@/utils/eckermann/parserBradesco'

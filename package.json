@@ -18,6 +18,7 @@
     "@fastify/sensible": "^6.0.3",
     "@fastify/swagger": "^9.5.0",
     "@fastify/swagger-ui": "^5.2.2",
+    "adm-zip": "^0.5.16",
     "base64topdf": "^1.1.8",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@rocketseat/eslint-config": "^2.2.2",
+    "@types/adm-zip": "^0.5.7",
     "@types/base64topdf": "^1.1.2",
     "@types/mime-types": "^3.0.1",
     "@types/mssql": "^9.1.7",

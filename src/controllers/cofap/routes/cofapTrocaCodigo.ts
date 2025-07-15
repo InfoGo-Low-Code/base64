@@ -8,12 +8,12 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { readFile, utils } from 'xlsx'
 import { basename } from 'node:path'
 
-import {
-  produtosSimilarCofapResponse,
-  ProdutosSimilarCofapResponse,
-} from '@/schemas/cofap/produtosSimilarCofapResponse'
-import { ProdutosSimilarCofapBody } from '@/schemas/cofap/produtosSimilarCofapBody'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
+import {
+  ProdutoSimilarResponseSchema,
+  produtoSimilarResponseSchema,
+} from '@/utils/cofap/parserCodigoSimilar'
+import { ProdutoSimilarSchema } from '@/schemas/cofap/infocode/produtoSimilarSchema'
 
 export function cofapTrocaCodigo(app: FastifyZodTypedInstance) {
   app.post(
@@ -26,7 +26,7 @@ export function cofapTrocaCodigo(app: FastifyZodTypedInstance) {
         response: {
           200: z.object({
             quantidade_registros: z.number(),
-            produtos: z.array(produtosSimilarCofapResponse),
+            produtos: z.array(produtoSimilarResponseSchema),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -54,7 +54,7 @@ export function cofapTrocaCodigo(app: FastifyZodTypedInstance) {
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
 
-        const dataXlsx: ProdutosSimilarCofapBody[] = utils.sheet_to_json(
+        const dataXlsx: ProdutoSimilarSchema[] = utils.sheet_to_json(
           worksheet,
           {
             header: [
@@ -67,7 +67,7 @@ export function cofapTrocaCodigo(app: FastifyZodTypedInstance) {
           },
         )
 
-        const produtos: ProdutosSimilarCofapResponse[] = dataXlsx.flatMap(
+        const produtos: ProdutoSimilarResponseSchema[] = dataXlsx.flatMap(
           ({ Produto, CodigoProdutoSimilar, Descricao, Comercializado }) => {
             return {
               Produto: String(Produto),

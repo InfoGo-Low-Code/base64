@@ -8,12 +8,11 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { readFile, utils } from 'xlsx'
 import { basename } from 'node:path'
 
-import {
-  crossReferencesCofapResponse,
-  CrossReferencesCofapResponse,
-} from '@/schemas/cofap/crossRefererncesCofapResponse'
-import { CrossReferencesCofapBody } from '@/schemas/cofap/crossReferencesCofapBody'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
+import {
+  CrossReferencesSchema,
+  crossReferencesSchema,
+} from '@/schemas/cofap/infocode/crossReferencesSchema'
 
 export function cofapCrossReferences(app: FastifyZodTypedInstance) {
   app.post(
@@ -26,7 +25,7 @@ export function cofapCrossReferences(app: FastifyZodTypedInstance) {
         response: {
           200: z.object({
             quantidade_registros: z.number(),
-            produtos: z.array(crossReferencesCofapResponse),
+            produtos: z.array(crossReferencesSchema),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -54,7 +53,7 @@ export function cofapCrossReferences(app: FastifyZodTypedInstance) {
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
 
-        const dataXlsx: CrossReferencesCofapBody[] = utils.sheet_to_json(
+        const dataXlsx: CrossReferencesSchema[] = utils.sheet_to_json(
           worksheet,
           {
             header: ['Produto', 'DescFabricante', 'NumeroProdutoPesq'],
@@ -62,7 +61,7 @@ export function cofapCrossReferences(app: FastifyZodTypedInstance) {
           },
         )
 
-        const produtos: CrossReferencesCofapResponse[] = dataXlsx.flatMap(
+        const produtos: CrossReferencesSchema[] = dataXlsx.flatMap(
           ({ Produto, DescFabricante, NumeroProdutoPesq }) => {
             return {
               Produto: String(Produto),

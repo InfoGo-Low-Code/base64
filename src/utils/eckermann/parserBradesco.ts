@@ -1,6 +1,6 @@
-import { ExtratoSchema } from "@/schemas/eckermann/extratoSchema"
-import { readFile, utils } from "xlsx"
-import { z } from "zod"
+import { ExtratoSchema } from '@/schemas/eckermann/extratoSchema'
+import { readFile, utils } from 'xlsx'
+import { z } from 'zod'
 
 const excelSchema = z.object({
   data: z.string(),
@@ -12,26 +12,25 @@ const excelSchema = z.object({
 
 type ExcelSchema = z.infer<typeof excelSchema>
 
-export function parserBradesco(filePath: string, empresa: string, filename: string): ExtratoSchema[] {
+export function parserBradesco(
+  filePath: string,
+  empresa: string,
+  filename: string,
+): ExtratoSchema[] {
   const workbook = readFile(filePath)
   const sheetName = workbook.SheetNames[0]
   const worksheet = workbook.Sheets[sheetName]
-  const dataXlsx: ExcelSchema[] = utils.sheet_to_json(
-    worksheet,
-    {
-      header: [
-        'data',
-        'lançamento',
-        'documento',
-        'credito',
-        'débito',
-      ],
-      range: 9,
-    }
-  )
+  const dataXlsx: ExcelSchema[] = utils.sheet_to_json(worksheet, {
+    header: ['data', 'lançamento', 'documento', 'credito', 'débito'],
+    range: 9,
+  })
 
   const filteredDataXlsx = dataXlsx.filter((register) => {
-    if ((typeof register.credito === 'number' || typeof register.débito === 'number') && register.lançamento) {
+    if (
+      (typeof register.credito === 'number' ||
+        typeof register.débito === 'number') &&
+      register.lançamento
+    ) {
       return register
     }
   })
@@ -42,7 +41,10 @@ export function parserBradesco(filePath: string, empresa: string, filename: stri
 
     const descricao = register.lançamento
 
-    const valor = typeof register.credito === 'number' ? register.credito : Number(register.débito)
+    const valor =
+      typeof register.credito === 'number'
+        ? register.credito
+        : Number(register.débito)
 
     const nome_relatorio = filename
 

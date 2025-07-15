@@ -1,8 +1,8 @@
-import { ExtratoSchema } from "@/schemas/eckermann/extratoSchema"
-import { readFile, utils } from "xlsx"
-import { z } from "zod"
-import { excelDateToJSDate } from "../parseXlsxDate"
-import { formatDate } from "../formatDate"
+import { ExtratoSchema } from '@/schemas/eckermann/extratoSchema'
+import { readFile, utils } from 'xlsx'
+import { z } from 'zod'
+import { excelDateToJSDate } from '../parseXlsxDate'
+import { formatDate } from '../formatDate'
 
 const excelSchema = z.object({
   data: z.number(),
@@ -13,22 +13,18 @@ const excelSchema = z.object({
 
 type ExcelSchema = z.infer<typeof excelSchema>
 
-export function parserSantander(filePath: string, empresa: string, filename: string): ExtratoSchema[] {
+export function parserSantander(
+  filePath: string,
+  empresa: string,
+  filename: string,
+): ExtratoSchema[] {
   const workbook = readFile(filePath)
   const sheetName = workbook.SheetNames[0]
   const worksheet = workbook.Sheets[sheetName]
-  const dataXlsx: ExcelSchema[] = utils.sheet_to_json(
-    worksheet,
-    {
-      header: [
-        'data',
-        'lancamento',
-        'conta',
-        'valor',
-      ],
-      range: 2,
-    }
-  )
+  const dataXlsx: ExcelSchema[] = utils.sheet_to_json(worksheet, {
+    header: ['data', 'lancamento', 'conta', 'valor'],
+    range: 2,
+  })
 
   const formattedData: ExtratoSchema[] = dataXlsx.map((register) => {
     const dataJs = excelDateToJSDate(register.data)

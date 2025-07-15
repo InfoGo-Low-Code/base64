@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto'
-
 export function camposConcat(base: any, recibo_parcela: string): string {
   const valores = [
     base.cliente,

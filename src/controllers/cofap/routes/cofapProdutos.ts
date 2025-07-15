@@ -8,12 +8,12 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { readFile, utils } from 'xlsx'
 import { basename } from 'node:path'
 
-import {
-  produtosCofapResponse,
-  ProdutosCofapResponse,
-} from '@/schemas/cofap/produtosCofapResponse'
-import { ProdutosCofapBody } from '@/schemas/cofap/produtosCofapBody'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
+import {
+  ProdutoResponseSchema,
+  produtoResponseSchema,
+} from '@/utils/cofap/parserProdutos'
+import { ProdutosSchema } from '@/schemas/cofap/infocode/produtosSchema'
 
 export function cofapProdutos(app: FastifyZodTypedInstance) {
   app.post(
@@ -26,7 +26,7 @@ export function cofapProdutos(app: FastifyZodTypedInstance) {
         response: {
           200: z.object({
             quantidade_registros: z.number(),
-            produtos: z.array(produtosCofapResponse),
+            produtos: z.array(produtoResponseSchema),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -54,7 +54,7 @@ export function cofapProdutos(app: FastifyZodTypedInstance) {
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
 
-        const dataXlsx: ProdutosCofapBody[] = utils.sheet_to_json(worksheet, {
+        const dataXlsx: ProdutosSchema[] = utils.sheet_to_json(worksheet, {
           header: [
             'Marca',
             'Linha',
@@ -67,7 +67,7 @@ export function cofapProdutos(app: FastifyZodTypedInstance) {
           range: 1,
         })
 
-        const produtos: ProdutosCofapResponse[] = dataXlsx.flatMap(
+        const produtos: ProdutoResponseSchema[] = dataXlsx.flatMap(
           ({ Marca, Linha, Produto, Posição, Obs, Comercializado, Site }) => {
             return {
               Marca: String(Marca),

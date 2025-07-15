@@ -8,12 +8,12 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { readFile, utils } from 'xlsx'
 import { basename } from 'node:path'
 
-import {
-  racionalizadosCofapResponse,
-  RacionalizadosCofapResponse,
-} from '@/schemas/cofap/racionalizadosCofapResponse'
-import { ProdutosSimilarCofapBody } from '@/schemas/cofap/produtosSimilarCofapBody'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
+import {
+  RacionalizadosResponseSchema,
+  racionalizadosResponseSchema,
+} from '@/utils/cofap/parserRacionalizados'
+import { RacionalizadosSchema } from '@/schemas/cofap/infocode/racionalizadosSchema'
 
 export function cofapRacionalizados(app: FastifyZodTypedInstance) {
   app.post(
@@ -26,7 +26,7 @@ export function cofapRacionalizados(app: FastifyZodTypedInstance) {
         response: {
           200: z.object({
             quantidade_registros: z.number(),
-            produtos: z.array(racionalizadosCofapResponse),
+            produtos: z.array(racionalizadosResponseSchema),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -54,24 +54,19 @@ export function cofapRacionalizados(app: FastifyZodTypedInstance) {
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
 
-        const dataXlsx: ProdutosSimilarCofapBody[] = utils.sheet_to_json(
+        const dataXlsx: RacionalizadosSchema[] = utils.sheet_to_json(
           worksheet,
           {
-            header: [
-              'Produto',
-              'CodigoProdutoSimilar',
-              'Descricao',
-              'Comercializado',
-            ],
+            header: ['Produto', 'CodigoProduto', 'Descricao', 'Comercializado'],
             range: 1,
           },
         )
 
-        const produtos: RacionalizadosCofapResponse[] = dataXlsx.flatMap(
-          ({ Produto, CodigoProdutoSimilar, Descricao, Comercializado }) => {
+        const produtos: RacionalizadosResponseSchema[] = dataXlsx.flatMap(
+          ({ Produto, CodigoProduto, Descricao, Comercializado }) => {
             return {
               Produto: String(Produto),
-              CodigoProduto: String(CodigoProdutoSimilar),
+              CodigoProduto: String(CodigoProduto),
               Descricao: String(Descricao),
               Comercializado: !Comercializado ? 'FALSO' : 'VERDADEIRO',
             }

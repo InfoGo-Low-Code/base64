@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorResponseSchema'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
-import { getMSSQLConnection } from '@/database/mssql'
+import { getEckermannConnection } from '@/database/eckermann'
 import sql from 'mssql'
 import { extratoSchema } from '@/schemas/eckermann/extratoSchema'
 
@@ -26,7 +26,7 @@ export function eckermannExtratos(app: FastifyZodTypedInstance) {
     },
     async (request, reply) => {
       const { registros } = request.body
-      const db = await getMSSQLConnection()
+      const db = await getEckermannConnection()
 
       function toSQLValue(val: any): string {
         if (val === null || val === undefined) return 'NULL'
@@ -69,7 +69,10 @@ export function eckermannExtratos(app: FastifyZodTypedInstance) {
 
         // response.rowsAffected é um array com os afetados por cada MERGE
         if (Array.isArray(response.rowsAffected)) {
-          registrosInseridos = response.rowsAffected.reduce((acc, v) => acc + v, 0)
+          registrosInseridos = response.rowsAffected.reduce(
+            (acc, v) => acc + v,
+            0,
+          )
         }
 
         registrosDuplicados -= registrosInseridos
@@ -78,7 +81,9 @@ export function eckermannExtratos(app: FastifyZodTypedInstance) {
 
         return reply.send({ registrosDuplicados, registrosInseridos })
       } catch (error: any) {
-        return reply.notAcceptable(`Erro ao executar comandos MERGE em batch: ${error.message}`)
+        return reply.notAcceptable(
+          `Erro ao executar comandos MERGE em batch: ${error.message}`,
+        )
       }
     },
   )
