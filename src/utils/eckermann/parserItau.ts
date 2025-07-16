@@ -1,15 +1,15 @@
 import { ExtratoSchema } from '@/schemas/eckermann/extratoSchema'
 import { z } from 'zod'
-import { excelDateToJSDate } from '../parseXlsxDate'
-import { formatDate } from '../formatDate'
 import { parserXlsxOrXls } from './parserXlsxOrXls'
+import { formatDate } from '../formatDate'
+import { excelDateToJSDate } from '../parseXlsxDate'
 
 const excelSchema = z.object({
-  data: z.number(),
+  data: z.union([z.string(), z.number()]),
   lancamento: z.string(),
   agencia_origem: z.string(),
-  valor: z.number().optional(),
-  saldo: z.number().optional(),
+  valor: z.coerce.number().optional(),
+  saldo: z.coerce.number().optional(),
 })
 
 type ExcelSchema = z.infer<typeof excelSchema>
@@ -19,10 +19,10 @@ export function parserItau(
   empresa: string,
   filename: string,
 ): ExtratoSchema[] {
-  const rawData = parserXlsxOrXls(filePath)
+  const rawData = parserXlsxOrXls(filePath, 'ITAÚ')
 
-  const dataXlsx = rawData.map((item) =>
-    excelSchema.parse(item),
+  const dataXlsx = rawData.map((item) => 
+    excelSchema.parse(item)
   ) as ExcelSchema[]
 
   const filteredDataXlsx = dataXlsx.filter((register) => {
@@ -32,8 +32,15 @@ export function parserItau(
   })
 
   const formattedData: ExtratoSchema[] = filteredDataXlsx.map((register) => {
-    const dataJs = excelDateToJSDate(register.data)
-    const data = formatDate(dataJs)
+    let data
+
+    if (typeof register.data === 'string') {
+      const [day, month, year] = register.data.split('/')
+      data = `${year}-${month}-${day}`
+    } else {
+      const dataJs = excelDateToJSDate(register.data)
+      data = formatDate(dataJs)
+    }
 
     const descricao = register.lancamento
 

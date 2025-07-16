@@ -4,10 +4,10 @@ import { parserXlsxOrXls } from './parserXlsxOrXls'
 
 const excelSchema = z.object({
   data: z.string(),
-  lançamento: z.string(),
-  documento: z.string(),
-  credito: z.union([z.string(), z.number()]),
-  débito: z.union([z.string(), z.number()]),
+  lancamento: z.string().optional(),
+  documento: z.coerce.string().optional(),
+  credito: z.union([z.string(), z.number()]).optional(),
+  debito: z.union([z.string(), z.number()]).optional(),
 })
 
 type ExcelSchema = z.infer<typeof excelSchema>
@@ -17,17 +17,17 @@ export function parserBradesco(
   empresa: string,
   filename: string,
 ): ExtratoSchema[] {
-  const rawData = parserXlsxOrXls(filePath)
+  const rawData = parserXlsxOrXls(filePath, 'BRADESCO')
 
-  const dataXlsx = rawData.map((item) =>
-    excelSchema.parse(item),
+  const dataXlsx = rawData.map((item) => 
+    excelSchema.parse(item)
   ) as ExcelSchema[]
 
   const filteredDataXlsx = dataXlsx.filter((register) => {
     if (
       (typeof register.credito === 'number' ||
-        typeof register.débito === 'number') &&
-      register.lançamento
+        typeof register.debito === 'number') &&
+      register.lancamento
     ) {
       return register
     }
@@ -37,12 +37,12 @@ export function parserBradesco(
     const [day, month, year] = register.data.split('/')
     const data = `${year}-${month}-${day}`
 
-    const descricao = register.lançamento
+    const descricao = register.lancamento ? register.lancamento : 'Não Informado'
 
     const valor =
       typeof register.credito === 'number'
         ? register.credito
-        : Number(register.débito)
+        : Number(register.debito)
 
     const nome_relatorio = filename
 

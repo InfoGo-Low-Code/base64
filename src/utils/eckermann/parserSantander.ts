@@ -18,7 +18,7 @@ export function parserSantander(
   empresa: string,
   filename: string,
 ): ExtratoSchema[] {
-  const rawData = parserXlsxOrXls(filePath)
+  const rawData = parserXlsxOrXls(filePath, 'SANTANDER')
 
   const dataXlsx = rawData.map((item) =>
     excelSchema.parse(item),

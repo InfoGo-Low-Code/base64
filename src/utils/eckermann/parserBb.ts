@@ -6,7 +6,7 @@ import { parserXlsxOrXls } from './parserXlsxOrXls'
 
 const excelSchema = z.object({
   data: z.number(),
-  observação: z.string(),
+  observacao: z.string(),
   data_balance: z.string(),
   agencia_origem: z.string(),
   lote: z.string(),
@@ -25,10 +25,10 @@ export function parserBb(
   empresa: string,
   filename: string,
 ): ExtratoSchema[] {
-  const rawData = parserXlsxOrXls(filePath)
+  const rawData = parserXlsxOrXls(filePath, 'BANCO DO BRASIL')
 
-  const dataXlsx = rawData.map((item) =>
-    excelSchema.parse(item),
+  const dataXlsx = rawData.map((item) => 
+    excelSchema.parse(item)
   ) as ExcelSchema[]
 
   const formattedData: ExtratoSchema[] = dataXlsx.map((register) => {
