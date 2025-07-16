@@ -1,6 +1,6 @@
 import { ExtratoSchema } from '@/schemas/eckermann/extratoSchema'
-import { readFile, utils } from 'xlsx'
 import { z } from 'zod'
+import { parserXlsxOrXls } from './parserXlsxOrXls'
 
 const excelSchema = z.object({
   data: z.string(),
@@ -17,13 +17,11 @@ export function parserBradesco(
   empresa: string,
   filename: string,
 ): ExtratoSchema[] {
-  const workbook = readFile(filePath)
-  const sheetName = workbook.SheetNames[0]
-  const worksheet = workbook.Sheets[sheetName]
-  const dataXlsx: ExcelSchema[] = utils.sheet_to_json(worksheet, {
-    header: ['data', 'lançamento', 'documento', 'credito', 'débito'],
-    range: 9,
-  })
+  const rawData = parserXlsxOrXls(filePath)
+
+  const dataXlsx = rawData.map((item) =>
+    excelSchema.parse(item),
+  ) as ExcelSchema[]
 
   const filteredDataXlsx = dataXlsx.filter((register) => {
     if (

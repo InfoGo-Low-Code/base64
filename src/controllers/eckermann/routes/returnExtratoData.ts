@@ -45,8 +45,13 @@ export function returnExtratoData(app: FastifyZodTypedInstance) {
         })
 
         const filename = basename(new URL(url).pathname)
-        const filePath = `./uploads/${filename}`
 
+        const extension = filename.split('.').pop()?.toLowerCase()
+        if (!['xls', 'xlsx'].includes(extension ?? '')) {
+          return reply.notAcceptable('Arquivo deve ser .xls ou .xlsx')
+        }
+
+        const filePath = `./uploads/${filename}`
         writeFileSync(filePath, data)
 
         let registros: ExtratoSchema[]
