@@ -48,7 +48,7 @@ export function parserItau(
 
     const nome_relatorio = filename
 
-    const banco = 'BRADESCO'
+    const banco = 'ITAÚ'
 
     const status = 0
 

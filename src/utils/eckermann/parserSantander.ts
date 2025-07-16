@@ -34,7 +34,7 @@ export function parserSantander(
 
     const nome_relatorio = filename
 
-    const banco = 'BRADESCO'
+    const banco = 'SANTANDER'
 
     const status = 0
 
