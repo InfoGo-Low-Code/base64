@@ -5,6 +5,7 @@ import { returnExtratoData } from './routes/returnExtratoData'
 import { eckermannExtratos } from './routes/eckemannExtratos'
 import { solicitacoesPagamento } from './routes/eckermannSolicitacoesPagamento'
 import { solicitacaoPagamentoId } from './routes/eckermannSolicitacaoPagamentoId'
+import { updateSolicitacoesPagamentoId } from './routes/eckermannUpdateSolicitacaoId'
 
 export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(returnExcelDataEckermann)
@@ -13,4 +14,5 @@ export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(eckermannExtratos)
   app.register(solicitacoesPagamento)
   app.register(solicitacaoPagamentoId)
+  app.register(updateSolicitacoesPagamentoId)
 }

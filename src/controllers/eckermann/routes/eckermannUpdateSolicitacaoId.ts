@@ -6,7 +6,7 @@ import { getEckermannConnection } from '@/database/eckermann'
 import sql from 'mssql'
 import { lookup } from 'mime-types'
 
-export function solicitacoesPagamento(app: FastifyZodTypedInstance) {
+export function updateSolicitacoesPagamentoId(app: FastifyZodTypedInstance) {
   app.put(
     '/eckermann/solicitacoesPagamento/:id',
     {
