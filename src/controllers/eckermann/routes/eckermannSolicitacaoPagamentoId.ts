@@ -42,10 +42,7 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
       try {
         const db = await getEckermannConnection()
 
-        const result = await db
-          .request()
-          .input('id', sql.NVarChar, id)
-          .query(`
+        const result = await db.request().input('id', sql.NVarChar, id).query(`
             SELECT *
             FROM eckermann_solicitacoes_pagamento
             WHERE id = @id

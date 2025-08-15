@@ -7,10 +7,13 @@ import sql from 'mssql'
 import { lookup } from 'mime-types'
 
 export function solicitacoesPagamento(app: FastifyZodTypedInstance) {
-  app.post(
-    '/eckermann/solicitacoesPagamento',
+  app.put(
+    '/eckermann/solicitacoesPagamento/:id',
     {
       schema: {
+        params: z.object({
+          id: z.string(),
+        }),
         body: z.object({
           tipo_despesa: z.string(),
           numero_processo: z.string(),
@@ -102,9 +105,22 @@ export function solicitacoesPagamento(app: FastifyZodTypedInstance) {
           .input('descricao_lancamento', sql.NVarChar, descricao_lancamento)
           .input('empresa', sql.NVarChar, empresa)
           .input('url_arquivo', sql.NVarChar, anexo).query(`
-            INSERT INTO eckermann_solicitacoes_pagamento
-            (id, tipo_despesa, numero_processo, suit, nome_cliente, fornecedor_favorecido, cpf_cnpj_favorecido, valor, data_vencimento, nome_arquivo, tipo_mime, anexo, descricao_lancamento, empresa, url_arquivo)
-            VALUES (@id, @tipo_despesa, @numero_processo, @suit, @nome_cliente, @fornecedor_favorecido, @cpf_cnpj_favorecido, @valor, @data_vencimento, @nome_arquivo, @tipo_mime, @anexo, @descricao_lancamento, @empresa, @url_arquivo)
+            UPDATE eckermann_solicitacoes_pagamento
+            SET tipo_despesa = @tipo_despesa,
+                numero_processo = @numero_processo,
+                suit = @suit,
+                nome_cliente = @nome_cliente,
+                fornecedor_favorecido = @fornecedor_favorecido,
+                cpf_cnpj_favorecido = @cpf_cnpj_favorecido,
+                valor = @valor,
+                data_vencimento = @data_vencimento,
+                nome_arquivo = @nome_arquivo,
+                tipo_mime = @tipo_mime,
+                anexo = @anexo,
+                descricao_lancamento = @descricao_lancamento,
+                empresa = @empresa,
+                url_arquivo = @url_arquivo
+            WHERE id = @id
           `)
 
         return reply.code(201).send({ message: 'Registro salvo com sucesso!' })
