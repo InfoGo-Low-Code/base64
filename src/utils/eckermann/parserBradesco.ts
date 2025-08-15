@@ -19,8 +19,8 @@ export function parserBradesco(
 ): ExtratoSchema[] {
   const rawData = parserXlsxOrXls(filePath, 'BRADESCO')
 
-  const dataXlsx = rawData.map((item) => 
-    excelSchema.parse(item)
+  const dataXlsx = rawData.map((item) =>
+    excelSchema.parse(item),
   ) as ExcelSchema[]
 
   const filteredDataXlsx = dataXlsx.filter((register) => {
@@ -37,7 +37,9 @@ export function parserBradesco(
     const [day, month, year] = register.data.split('/')
     const data = `${year}-${month}-${day}`
 
-    const descricao = register.lancamento ? register.lancamento : 'Não Informado'
+    const descricao = register.lancamento
+      ? register.lancamento
+      : 'Não Informado'
 
     const valor =
       typeof register.credito === 'number'

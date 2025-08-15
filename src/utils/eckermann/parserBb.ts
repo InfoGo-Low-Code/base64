@@ -27,8 +27,8 @@ export function parserBb(
 ): ExtratoSchema[] {
   const rawData = parserXlsxOrXls(filePath, 'BANCO DO BRASIL')
 
-  const dataXlsx = rawData.map((item) => 
-    excelSchema.parse(item)
+  const dataXlsx = rawData.map((item) =>
+    excelSchema.parse(item),
   ) as ExcelSchema[]
 
   const formattedData: ExtratoSchema[] = dataXlsx.map((register) => {

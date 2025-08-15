@@ -21,8 +21,8 @@ export function parserItau(
 ): ExtratoSchema[] {
   const rawData = parserXlsxOrXls(filePath, 'ITAÚ')
 
-  const dataXlsx = rawData.map((item) => 
-    excelSchema.parse(item)
+  const dataXlsx = rawData.map((item) =>
+    excelSchema.parse(item),
   ) as ExcelSchema[]
 
   const filteredDataXlsx = dataXlsx.filter((register) => {
