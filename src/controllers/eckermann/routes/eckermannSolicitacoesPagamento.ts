@@ -100,10 +100,12 @@ export function solicitacoesPagamento(app: FastifyZodTypedInstance) {
           .input('tipo_mime', sql.NVarChar, mimeType)
           .input('anexo', sql.VarBinary(sql.MAX), buffer)
           .input('descricao_lancamento', sql.NVarChar, descricao_lancamento)
-          .input('empresa', sql.NVarChar, empresa).query(`
+          .input('empresa', sql.NVarChar, empresa)
+          .input('url_arquivo', sql.NVarChar, anexo)
+          .query(`
             INSERT INTO eckermann_solicitacoes_pagamento
-            (id, tipo_despesa, numero_processo, suit, nome_cliente, fornecedor_favorecido, cpf_cnpj_favorecido, valor, data_vencimento, nome_arquivo, tipo_mime, anexo, descricao_lancamento, empresa)
-            VALUES (@id, @tipo_despesa, @numero_processo, @suit, @nome_cliente, @fornecedor_favorecido, @cpf_cnpj_favorecido, @valor, @data_vencimento, @nome_arquivo, @tipo_mime, @anexo, @descricao_lancamento, @empresa)
+            (id, tipo_despesa, numero_processo, suit, nome_cliente, fornecedor_favorecido, cpf_cnpj_favorecido, valor, data_vencimento, nome_arquivo, tipo_mime, anexo, descricao_lancamento, empresa, url_arquivo)
+            VALUES (@id, @tipo_despesa, @numero_processo, @suit, @nome_cliente, @fornecedor_favorecido, @cpf_cnpj_favorecido, @valor, @data_vencimento, @nome_arquivo, @tipo_mime, @anexo, @descricao_lancamento, @empresa, @url_arquivo)
           `)
 
         return reply.code(201).send({ message: 'Registro salvo com sucesso!' })
