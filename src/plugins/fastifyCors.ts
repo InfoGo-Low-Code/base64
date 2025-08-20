@@ -5,6 +5,6 @@ export async function fastifyCors(app: FastifyZodTypedInstance) {
   await app.register(cors, {
     origin: '*',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
 }
