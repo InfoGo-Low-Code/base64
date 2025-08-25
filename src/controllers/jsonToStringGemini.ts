@@ -33,9 +33,9 @@ export function jsonToStringGemini(app: FastifyZodTypedInstance) {
       let stringReturnGemini = ''
 
       orderDataByDataAsc.forEach((entry, idx) => {
-        const quebraLinha = idx === data.length - 1 ? '' : '\\n\n'
-
-        stringReturnGemini += `${entry.HISTORICO} (${entry.DATE_HOUR})${quebraLinha}`
+        const entrySemAspas = entry.HISTORICO.replace(/"/g, '')
+        const quebraLinha = idx === orderDataByDataAsc.length ? '' : '\\n\n'
+        stringReturnGemini += `${entrySemAspas} (${entry.DATE_HOUR})${quebraLinha}`
       })
 
       return reply.send(stringReturnGemini)
