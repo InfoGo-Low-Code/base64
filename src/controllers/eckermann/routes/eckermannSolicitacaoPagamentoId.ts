@@ -26,10 +26,11 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
             data_vencimento: z.string(),
             nome_arquivo: z.string(),
             tipo_mime: z.string(),
-            anexo: z.string().nullable(), // base64 do arquivo
+            anexo: z.string().nullable(),
             url_arquivo: z.string(),
             descricao_lancamento: z.string(),
             empresa: z.string(),
+            email_gestor: z.string(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -74,6 +75,7 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
           descricao_lancamento: registro.descricao_lancamento,
           empresa: registro.empresa,
           url_arquivo: registro.url_arquivo,
+          email_gestor: registro.email_gestor,
         })
       } catch (err) {
         console.error(err)
