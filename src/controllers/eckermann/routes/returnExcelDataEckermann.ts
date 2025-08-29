@@ -165,35 +165,6 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               )
             }
 
-            if (
-              recibo_parcela !== '?' &&
-              recibo_parcela !== '-' &&
-              recibo_parcela !== 'A DEFINIR'
-            ) {
-              return Array.from({ length: 12 }, (_, idx) => {
-                const vencimento = baseObject.data_vencimento
-                  ? new Date(baseObject.data_vencimento)
-                  : undefined
-
-                if (vencimento) {
-                  vencimento.setUTCMonth(vencimento.getUTCMonth() + idx)
-                }
-
-                const pagamento =
-                  idx === 0 ? baseObject.data_pagamento : undefined
-
-                const recibo_parcela_formatado = `${recibo_parcela}-${idx + 1}/${12}`
-
-                return {
-                  ...baseObject,
-                  id: camposConcat(baseObject, recibo_parcela_formatado),
-                  data_vencimento: vencimento,
-                  recibo_parcela: recibo_parcela_formatado,
-                  data_pagamento: pagamento,
-                }
-              })
-            }
-
             return {
               ...baseObject,
               id: camposConcat(baseObject, recibo_parcela),
