@@ -1,5 +1,6 @@
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import AdmZip from 'adm-zip'
+import path from 'node:path'
 import { z } from 'zod'
 
 export function downloadMultiplosArquivos(app: FastifyZodTypedInstance) {
@@ -24,7 +25,8 @@ export function downloadMultiplosArquivos(app: FastifyZodTypedInstance) {
           responseType: 'arraybuffer',
         })
 
-        const filename = `${nomesArquivos[idx]}-${datas[idx]}`
+        const { name, ext } = path.parse(nomesArquivos[idx])
+        const filename = `${name}-${datas[idx]}${ext}`
 
         zipFile.addFile(filename, Buffer.from(data))
       }
