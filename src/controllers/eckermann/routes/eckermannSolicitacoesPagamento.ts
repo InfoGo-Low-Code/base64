@@ -50,13 +50,9 @@ export function solicitacoesPagamento(app: FastifyZodTypedInstance) {
         empresa,
       } = request.body
 
-      const [dia, mes, ano] = data_vencimento.split('/')
+      const dataVencimento = new Date(data_vencimento)
 
-      const dataVencimentoFormatada = `${ano}-${mes}-${dia}`
-
-      const dataVencimento = new Date(dataVencimentoFormatada)
-
-      const id = `${numero_processo}&${suit}&${tipo_despesa}&${nome_cliente}&${valor}${dataVencimentoFormatada}${empresa}`
+      const id = `${numero_processo}&${suit}&${tipo_despesa}&${nome_cliente}&${valor}${data_vencimento}${empresa}`
 
       try {
         let dataAnexo
