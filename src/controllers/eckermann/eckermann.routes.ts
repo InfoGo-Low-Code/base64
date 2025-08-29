@@ -6,6 +6,7 @@ import { eckermannExtratos } from './routes/eckemannExtratos'
 import { solicitacoesPagamento } from './routes/eckermannSolicitacoesPagamento'
 import { solicitacaoPagamentoId } from './routes/eckermannSolicitacaoPagamentoId'
 import { updateSolicitacoesPagamentoId } from './routes/eckermannUpdateSolicitacaoId'
+import { downloadMultiplosArquivos } from './routes/downloadMultiplosArquivos'
 
 export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(returnExcelDataEckermann)
@@ -15,4 +16,5 @@ export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(solicitacoesPagamento)
   app.register(solicitacaoPagamentoId)
   app.register(updateSolicitacoesPagamentoId)
+  app.register(downloadMultiplosArquivos)
 }
