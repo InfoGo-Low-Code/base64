@@ -27,6 +27,7 @@ export function updateSolicitacoesPagamentoId(app: FastifyZodTypedInstance) {
           nome_arquivo: z.string(),
           descricao_lancamento: z.string(),
           empresa: z.string(),
+          email_gestor: z.string().email(),
         }),
         response: {
           201: z.object({
@@ -51,15 +52,12 @@ export function updateSolicitacoesPagamentoId(app: FastifyZodTypedInstance) {
         anexo,
         descricao_lancamento,
         empresa,
+        email_gestor,
       } = request.body
 
       const { id } = request.params
 
-      const [dia, mes, ano] = data_vencimento.split('/')
-
-      const dataVencimentoFormatada = `${ano}-${mes}-${dia}`
-
-      const dataVencimento = new Date(dataVencimentoFormatada)
+      const dataVencimento = new Date(data_vencimento)
 
       try {
         let dataAnexo
@@ -104,7 +102,8 @@ export function updateSolicitacoesPagamentoId(app: FastifyZodTypedInstance) {
           .input('anexo', sql.VarBinary(sql.MAX), buffer)
           .input('descricao_lancamento', sql.NVarChar, descricao_lancamento)
           .input('empresa', sql.NVarChar, empresa)
-          .input('url_arquivo', sql.NVarChar, anexo).query(`
+          .input('url_arquivo', sql.NVarChar, anexo)
+          .input('email_gestor', sql.NVarChar, email_gestor).query(`
             UPDATE eckermann_solicitacoes_pagamento
             SET tipo_despesa = @tipo_despesa,
                 numero_processo = @numero_processo,
