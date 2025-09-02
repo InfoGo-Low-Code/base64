@@ -1,5 +1,5 @@
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
-import { getNamesSellers, getSellValue } from '@/utils/invistaii/routeUsage'
+import { getImgSellers, getNamesSellers, getSellValue } from '@/utils/invistaii/routeUsage'
 import { z } from 'zod'
 
 export function verifySell(app: FastifyZodTypedInstance) {
@@ -18,7 +18,7 @@ export function verifySell(app: FastifyZodTypedInstance) {
     },
     async (_, reply) => {
       const vendedores = getNamesSellers()
-      const imagens = getNamesSellers()
+      const imagens = getImgSellers()
       const valorVenda = getSellValue()
 
       reply.send({ vendedores, imagens, valorVenda })
