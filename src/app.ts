@@ -19,6 +19,7 @@ import { cofapRoutes } from './controllers/cofap/cofap.routes'
 import { urlFileToBase64 } from './controllers/urlFileToBase64'
 import { eckermannRoutes } from './controllers/eckermann/eckermann.routes'
 import { jsonToStringGemini } from './controllers/jsonToStringGemini'
+import { invistaiiRoutes } from './controllers/invistaii/invistaii.routes'
 
 export const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -43,3 +44,4 @@ app.register(cofapRoutes)
 app.register(urlFileToBase64)
 app.register(eckermannRoutes)
 app.register(jsonToStringGemini)
+app.register(invistaiiRoutes)
