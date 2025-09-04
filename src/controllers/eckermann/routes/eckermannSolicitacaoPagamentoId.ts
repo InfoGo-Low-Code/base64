@@ -31,6 +31,7 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
             descricao_lancamento: z.string(),
             empresa: z.string(),
             email_gestor: z.string(),
+            status: z.number(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -76,6 +77,7 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
           empresa: registro.empresa,
           url_arquivo: registro.url_arquivo,
           email_gestor: registro.email_gestor,
+          status: registro.status,
         })
       } catch (err) {
         console.error(err)
