@@ -1,5 +1,9 @@
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
-import { getImgSellers, getNamesSellers, getSellValue } from '@/utils/invistaii/routeUsage'
+import {
+  getImgSellers,
+  getNamesSellers,
+  getSellValue,
+} from '@/utils/invistaii/routeUsage'
 import { z } from 'zod'
 
 export function verifySell(app: FastifyZodTypedInstance) {

@@ -105,8 +105,8 @@ export function solicitacoesPagamento(app: FastifyZodTypedInstance) {
           .input('usuario', sql.NVarChar, usuario)
           .input('email_gestor', sql.NVarChar, email_gestor).query(`
             INSERT INTO eckermann_solicitacoes_pagamento
-            (id, tipo_despesa, numero_processo, suit, nome_cliente, fornecedor_favorecido, cpf_cnpj_favorecido, valor, data_vencimento, nome_arquivo, tipo_mime, anexo, descricao_lancamento, empresa, url_arquivo, usuario, email_gestor, status)
-            VALUES (@id, @tipo_despesa, @numero_processo, @suit, @nome_cliente, @fornecedor_favorecido, @cpf_cnpj_favorecido, @valor, @data_vencimento, @nome_arquivo, @tipo_mime, @anexo, @descricao_lancamento, @empresa, @url_arquivo, @usuario, @email_gestor, 1)
+            (id, tipo_despesa, numero_processo, suit, nome_cliente, fornecedor_favorecido, cpf_cnpj_favorecido, valor, data_vencimento, nome_arquivo, tipo_mime, anexo, descricao_lancamento, empresa, url_arquivo, usuario, email_gestor, status, flag_excluido)
+            VALUES (@id, @tipo_despesa, @numero_processo, @suit, @nome_cliente, @fornecedor_favorecido, @cpf_cnpj_favorecido, @valor, @data_vencimento, @nome_arquivo, @tipo_mime, @anexo, @descricao_lancamento, @empresa, @url_arquivo, @usuario, @email_gestor, 1, 0)
           `)
 
         return reply.code(201).send({ message: 'Registro salvo com sucesso!' })
