@@ -2,7 +2,7 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { getRouteUsageAudisa } from '@/utils/audisa/routeUsage'
 import { z } from 'zod'
 
-export function verifySell(app: FastifyZodTypedInstance) {
+export function verifyUsage(app: FastifyZodTypedInstance) {
   app.get(
     '/audisa/verifyUsage',
     {
