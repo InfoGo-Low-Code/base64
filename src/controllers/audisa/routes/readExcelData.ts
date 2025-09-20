@@ -88,7 +88,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       schema: {
         body: z.object({
           url: z.string().url(),
-          empresa: z.string().transform((value) => value.toLowerCase()),
+          empresa: z.string().transform((value) => value.toLowerCase().replace(' ', '_')),
         }),
         response: {
           201: z.object({
