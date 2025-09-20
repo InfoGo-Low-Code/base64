@@ -8,6 +8,7 @@ import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorRespons
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { ConnectionPool, Request } from 'mssql'
+import { setRouteUsageAudisa } from '@/utils/audisa/routeUsage'
 
 const excelDataSchema = z.object({
   A: z.string(),
@@ -88,7 +89,9 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       schema: {
         body: z.object({
           url: z.string().url(),
-          empresa: z.string().transform((value) => value.toLowerCase().replace(' ', '_')),
+          empresa: z
+            .string()
+            .transform((value) => value.toLowerCase().replace(' ', '_')),
         }),
         response: {
           201: z.object({
@@ -101,6 +104,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
+      setRouteUsageAudisa(true)
+
       const { url, empresa } = request.body
 
       if (!existsSync('./uploads')) {
@@ -119,6 +124,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
         writeFileSync(filePath, data)
       } catch {
+        setRouteUsageAudisa(false)
+
         return reply.internalServerError('Erro ao baixar arquivo')
       }
 
@@ -279,6 +286,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           db,
         )
 
+        setRouteUsageAudisa(false)
+
         return reply.status(201).send({
           message: 'Registros inseridos com sucesso',
           registrosInseridos,
@@ -307,6 +316,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       } catch (e: any) {
         unlinkSync(filePath)
 
+        setRouteUsageAudisa(false)
+
         return reply.internalServerError(e.message)
       }
 
@@ -318,6 +329,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       )
 
       unlinkSync(filePath)
+
+      setRouteUsageAudisa(false)
 
       return reply.status(201).send({
         message: 'Registros inseridos com sucesso',
