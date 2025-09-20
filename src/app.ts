@@ -20,6 +20,7 @@ import { urlFileToBase64 } from './controllers/urlFileToBase64'
 import { eckermannRoutes } from './controllers/eckermann/eckermann.routes'
 import { jsonToStringGemini } from './controllers/jsonToStringGemini'
 import { invistaiiRoutes } from './controllers/invistaii/invistaii.routes'
+import { audisaRoutes } from './controllers/audisa/audisa.routes'
 
 export const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -45,3 +46,4 @@ app.register(urlFileToBase64)
 app.register(eckermannRoutes)
 app.register(jsonToStringGemini)
 app.register(invistaiiRoutes)
+app.register(audisaRoutes)

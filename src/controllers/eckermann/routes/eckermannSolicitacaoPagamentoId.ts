@@ -32,7 +32,7 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
             empresa: z.string(),
             email_gestor: z.string().nullable(),
             status: z.number(),
-            flag_excluido: z.number()
+            flag_excluido: z.number(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -79,7 +79,7 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
           url_arquivo: registro.url_arquivo,
           email_gestor: registro.email_gestor,
           status: registro.status,
-          flag_excluido: registro.flag_excluido
+          flag_excluido: registro.flag_excluido,
         })
       } catch (err) {
         console.error(err)
