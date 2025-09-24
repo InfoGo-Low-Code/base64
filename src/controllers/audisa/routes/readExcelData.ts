@@ -39,13 +39,36 @@ const excelDataTransformed = z.object({
 
 type ExcelDataTransformed = z.infer<typeof excelDataTransformed>
 
+function formatValue(value: any): string {
+  if (value === null || value === undefined || value === 'null' || value === 'undefined') {
+    return 'NULL'
+  }
+  if (typeof value === 'number') {
+    return value.toString()
+  }
+  return `'${String(value).replace(/'/g, "''")}'`
+}
+
 function toSQLInsert(array: ExcelDataTransformed[], empresa: string): string[] {
   const sqlInserts = array.map((item, idx) => {
     const valor = item.debito === 0 ? item.credito : item.debito
     const ID = idx + 1
 
-    return `INSERT INTO razao_${empresa} (conta, conta_partida, data, numero, historico, cta_c_part, debito, credito, saldo, ID, valor)
-      VALUES ('${item.contaAtual}', '${item.cPartida}', '${item.data}', '${item.lote}', '${item.historico}', '${item.lanc}', ${item.debito}, ${item.credito}, ${item.saldo}, '${ID}', ${valor})`
+    return `INSERT INTO razao_${empresa} 
+      (conta, conta_partida, data, numero, historico, cta_c_part, debito, credito, saldo, ID, valor)
+      VALUES (
+        ${formatValue(item.contaAtual)},
+        ${formatValue(item.cPartida)},
+        ${formatValue(item.data)},
+        ${formatValue(item.lote)},
+        ${formatValue(item.historico)},
+        ${formatValue(item.lanc)},
+        ${formatValue(item.debito)},
+        ${formatValue(item.credito)},
+        ${formatValue(item.saldo)},
+        ${formatValue(ID)},
+        ${formatValue(valor)}
+      )`
   })
 
   return sqlInserts
@@ -137,21 +160,15 @@ export function readExcelData(app: FastifyZodTypedInstance) {
         blankrows: true,
       })
 
-      let currentIdxDebito = -1
-      let currentIdxCredito = -1
-      let currentIdxSaldo = -1
-      let currentIdxData = -1
-      let currentIdxLote = -1
-      let currentIdxLanc = -1
-      let currentIdxCPartida = -1
-      let currentIdxHistorico = -1
       const regexAccount = new RegExp(/^\d\.\d\.\d\.\d{2}\.\d{5}$/)
 
       let contaAtual = ''
 
       const registers: ExcelDataTransformed[] = []
 
-      dataXlsx.forEach((register) => {
+      let colMap: Record<string, keyof ExcelDataSchema> = {} as any
+
+      dataXlsx.forEach((register, idx) => {
         const accountValidation = regexAccount.test(register.A)
 
         if (accountValidation) {
@@ -167,105 +184,84 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           normalizedRows.includes('CREDITO') &&
           normalizedRows.includes('SALDO')
         ) {
-          currentIdxData = normalizedRows.findIndex((c) => c === 'DATA')
-          currentIdxLote = normalizedRows.findIndex((c) => c === 'LOTE')
-          currentIdxLanc = normalizedRows.findIndex((c) => c === 'LANC')
-          currentIdxCPartida = normalizedRows.findIndex(
-            (c) => c === 'C/PARTIDA',
-          )
-          currentIdxHistorico = normalizedRows.findIndex(
-            (c) => c === 'HISTORICO',
-          )
-          currentIdxDebito = normalizedRows.findIndex((c) => c === 'DEBITO')
-          currentIdxCredito = normalizedRows.findIndex((c) => c === 'CREDITO')
-          currentIdxSaldo = normalizedRows.findIndex((c) => c === 'SALDO')
-        } else {
-          const values = Object.values(register)
+          const keys = Object.keys(register) as (keyof ExcelDataSchema)[]
 
-          if (values.length > 3) {
-            const data = values[currentIdxData]
-            const lote = values[currentIdxLote]
-            const lanc = values[currentIdxLanc]
-            const cPartida = values[currentIdxCPartida]
-            const historico = values[currentIdxHistorico]
-            const debito = values[currentIdxDebito]
-            const credito = values[currentIdxCredito]
-            const saldo = values[currentIdxSaldo]
+          colMap = {
+            data: keys[normalizedRows.findIndex((c) => c === 'DATA')],
+            lote: keys[normalizedRows.findIndex((c) => c === 'LOTE')],
+            lanc: keys[normalizedRows.findIndex((c) => c === 'LANC')],
+            cPartida: keys[normalizedRows.findIndex((c) => c === 'C/PARTIDA')],
+            historico: keys[normalizedRows.findIndex((c) => c === 'HISTORICO')],
+            debito: keys[normalizedRows.findIndex((c) => c === 'DEBITO')],
+            credito: keys[normalizedRows.findIndex((c) => c === 'CREDITO')],
+            saldo: keys[normalizedRows.findIndex((c) => c === 'SALDO')],
+          }
+        } else if (Object.values(register).length > 3) {
+            let data: string | null = register[colMap.data] ?? null
+            let lote: string | null = register[colMap.lote] ?? null
+            let lanc: string | null = register[colMap.lanc] ?? null
+            let cPartida: string | null = register[colMap.cPartida] ?? null
+            let historico: string | null = register[colMap.historico] ?? null
+            let debito: string | null = register[colMap.debito] ?? null
+            let credito: string | null = register[colMap.credito] ?? null
+            let saldo: string | null = register[colMap.saldo] ?? null
 
-            if (
-              !data ||
-              !lote ||
-              !lanc ||
-              !cPartida ||
-              !historico ||
-              debito === undefined ||
-              debito === null ||
-              credito === undefined ||
-              credito === null ||
-              saldo === undefined ||
-              saldo === null
-            ) {
-              // Lógica caso falte algum campo
-            } else {
-              let dataTransformed: string | null = ''
-              let contaPartida: string | null = ''
+            let dataTransformed: string | null = null
 
-              if (data.includes('/')) {
-                const valoresData = data.split('/')
+            if (data && data.includes('/')) {
+              const valoresData = data.split('/')
 
-                if (valoresData.length !== 3) {
-                  dataTransformed = null
-                } else {
-                  const [diaJs, mesJs, anoJs] = valoresData
-
-                  dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
-                }
-              } else if (data.includes('-')) {
-                const valoresData = data.split('-')
-
-                if (valoresData.length !== 3) {
-                  dataTransformed = null
-                } else {
-                  const [diaJs, mesJs, anoJs] = valoresData
-
-                  dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
-                }
-              } else if (typeof data === 'number') {
-                const [diaJs, mesJs, anoJs] = excelDateToJSDate(data)
-                  .toLocaleDateString('pt-BR', { timeZone: 'UTC' })
-                  .split('-')
+              if (valoresData.length !== 3) {
+                dataTransformed = null
+              } else {
+                const [diaJs, mesJs, anoJs] = valoresData
 
                 dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
-              } else {
+              }
+            } else if (data && data.includes('-')) {
+              const valoresData = data.split('-')
+
+              if (valoresData.length !== 3) {
                 dataTransformed = null
-              }
-
-              if (
-                !regexAccount.test(cPartida) &&
-                normalize(cPartida) !== 'MULTIPLO'
-              ) {
-                contaPartida = null
               } else {
-                contaPartida = cPartida
-              }
+                const [diaJs, mesJs, anoJs] = valoresData
 
-              if (dataTransformed !== null && contaPartida !== null) {
-                const parsedRegister = excelDataTransformed.parse({
-                  contaAtual: String(contaAtual),
-                  data: dataTransformed,
-                  lote: String(lote),
-                  lanc: String(lanc),
-                  cPartida: String(contaPartida),
-                  historico: String(historico),
-                  debito: Number(debito),
-                  credito: Number(credito),
-                  saldo: Number(saldo),
-                })
-
-                registers.push(parsedRegister)
+                dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
               }
+            } else if (typeof data === 'number') {
+              const [diaJs, mesJs, anoJs] = excelDateToJSDate(data)
+                .toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+                .split('-')
+
+              dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
+            } else {
+              dataTransformed = null
             }
-          }
+
+            let contaPartida: string | null = null
+            if (
+              cPartida &&
+              !regexAccount.test(cPartida) &&
+              normalize(cPartida) !== 'MULTIPLO'
+            ) {
+              contaPartida = null
+            } else {
+              contaPartida = cPartida
+            }
+
+            const parsedRegister = excelDataTransformed.parse({
+              contaAtual: String(contaAtual),
+              data: dataTransformed,
+              lote: String(lote),
+              lanc: String(lanc),
+              cPartida: String(contaPartida),
+              historico: String(historico),
+              debito: Number(debito),
+              credito: Number(credito),
+              saldo: Number(saldo),
+            })
+
+            registers.push(parsedRegister)
         }
       })
 
@@ -287,6 +283,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
         )
 
         setRouteUsageAudisa(false)
+
+        unlinkSync(filePath)
 
         return reply.status(201).send({
           message: 'Registros inseridos com sucesso',
@@ -310,7 +308,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
             ID INT NOT NULL,
             valor NUMERIC(10, 2),
             Prob float,
-            valicacao varchar(50)
+            validacao varchar(50)
           )
         `)
       } catch (e: any) {
