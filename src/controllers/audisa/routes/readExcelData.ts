@@ -91,7 +91,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           url: z.string().url(),
           empresa: z
             .string()
-            .transform((value) => value.toLowerCase().replace(' ', '_')),
+            .transform((value) => value.toLowerCase().replace(/ /g, '_')),
         }),
         response: {
           201: z.object({
@@ -151,7 +151,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
       const registers: ExcelDataTransformed[] = []
 
-      dataXlsx.forEach((register, idx) => {
+      dataXlsx.forEach((register) => {
         const accountValidation = regexAccount.test(register.A)
 
         if (accountValidation) {
