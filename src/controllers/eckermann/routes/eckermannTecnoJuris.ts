@@ -64,6 +64,9 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
     '/eckermann/tecnoJuris',
     {
       schema: {
+        querystring: z.object({
+          amountRegisters: z.coerce.number().default(20)
+        }),
         response: {
           200: z.object({
             data: z.array(dataReturn)
@@ -73,7 +76,9 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
         },
       },
     },
-    async (_, reply) => {
+    async (request, reply) => {
+      const { amountRegisters } = request.query
+
       const {
         data: {
           usuario: { jwt_token },
@@ -124,7 +129,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               }
             }
           `,
-          variables: { last: 100 },
+          variables: { last: amountRegisters },
         },
         { headers: { AUTH_TOKEN: jwt_token } },
       )
