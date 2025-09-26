@@ -48,13 +48,13 @@ const dataReturn = z.object({
   cliente: z.string(),
   descricao: z.string(),
   data: z.string(),
-  efetivado: z.union([z.literal(0), z.literal(1)]),
-  faturado: z.union([z.literal(0), z.literal(1)]),
   natureza: z.string(),
   processoId: z.string(),
   tipo: z.string(),
   unidade: z.string(),
   valor: z.number(),
+  efetivado: z.union([z.literal(0), z.literal(1)]),
+  faturado: z.union([z.literal(0), z.literal(1)]),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
