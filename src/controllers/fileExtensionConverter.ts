@@ -63,7 +63,7 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
           .header('content-type', contentType)
           .header(
             'content-disposition',
-            `attachment; ${filename}.${extensionConvert}`,
+            `attachment; filename="${filename}.${extensionConvert}"`,
           )
           .send(buffer)
       } catch (error) {
