@@ -9,6 +9,7 @@ const envSchema = z.object({
   DB_PASSWORD: z.string(),
   DB_SERVER: z.string(),
   DB_PORT: z.coerce.number().default(1433),
+  CONVERTAPI_SECRET: z.string(),
 })
 
 export const env = envSchema.parse(process.env)
