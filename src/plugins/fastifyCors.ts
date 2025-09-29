@@ -6,5 +6,6 @@ export async function fastifyCors(app: FastifyZodTypedInstance) {
     origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    exposedHeaders: ['Content-Disposition', 'Content-Type']
   })
 }
