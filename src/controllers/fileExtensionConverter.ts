@@ -19,7 +19,11 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
           extensionConvert: z.string(),
         }),
         response: {
-          200: z.object({}),
+          200: z.object({
+            base64: z.string(),
+            mimetype: z.string(),
+            filename: z.string(),
+          }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
         },
@@ -28,10 +32,18 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
     async (request, reply) => {
       const { url, filename, extensionConvert } = request.body
 
+      const filenameWithoutExt = filename.split('.')[0]
+
       const extensionFile = extname(filename).replace('.', '')
 
       if (!extensionFile) {
         return reply.internalServerError('Arquivo com extensão inválida')
+      }
+
+      const contentType = lookup(extensionConvert)
+
+      if (!contentType) {
+        return reply.internalServerError('Extensão desejada inválida')
       }
 
       const { CONVERTAPI_SECRET } = env
@@ -57,15 +69,13 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
 
         const buffer = Buffer.from(fileConverted)
 
-        const contentType = lookup(extensionConvert)
+        const base64 = buffer.toString('base64')
 
-        return reply
-          .header('content-type', contentType)
-          .header(
-            'content-disposition',
-            `attachment; filename="${filename}.${extensionConvert}"`,
-          )
-          .send(buffer)
+        return reply.send({
+          base64,
+          mimetype: contentType,
+          filename: `${filenameWithoutExt}.${extensionConvert}`,
+        })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
