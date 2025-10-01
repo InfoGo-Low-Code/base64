@@ -20,9 +20,10 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
         }),
         response: {
           200: z.object({
-            base64: z.string(),
+            url: z.string(),
             mimetype: z.string(),
             filename: z.string(),
+            base64: z.string(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -72,9 +73,10 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
         const base64 = buffer.toString('base64')
 
         return reply.send({
-          base64,
+          url: urlConverted,
           mimetype: contentType,
           filename: `${filenameWithoutExt}.${extensionConvert}`,
+          base64,
         })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
