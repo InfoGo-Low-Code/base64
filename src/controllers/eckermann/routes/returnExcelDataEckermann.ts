@@ -42,13 +42,15 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
         mkdirSync('./uploads', { recursive: true })
       }
 
+      let filePath = ''
+
       try {
         const { data } = await app.axios.get(url, {
           responseType: 'arraybuffer',
         })
 
         const filename = basename(new URL(url).pathname)
-        const filePath = `./uploads/${filename}`
+        filePath = `./uploads/${filename}`
 
         writeFileSync(filePath, data)
 
@@ -73,48 +75,57 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               'SÓCIO',
             ],
             range: 1,
+            blankrows: false,
           },
         )
 
-        const slicedDataXlsx = dataXlsx.slice(0, -3)
+        const slicedDataXlsx = dataXlsx.filter(
+          (register) => Object.keys(register).length > 4,
+        )
 
         const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.flatMap(
           (line) => {
             const cliente =
               line.CLIENTE === '?' || !line.CLIENTE
-                ? 'Não informado'
-                : line.CLIENTE
+                ? 'NÃO INFORMADO'
+                : String(line.CLIENTE)
 
             const carteira =
               line.CARTEIRA === '?' || !line.CARTEIRA
-                ? 'Não informado'
-                : line.CARTEIRA
+                ? 'NÃO INFORMADO'
+                : String(line.CARTEIRA)
 
             const descricao_honorario =
               line['DESCRIÇÃO DOS HONORÁRIOS'] === '?' ||
               !line['DESCRIÇÃO DOS HONORÁRIOS']
-                ? 'Não informado'
-                : line['DESCRIÇÃO DOS HONORÁRIOS']
+                ? 'NÃO INFORMADO'
+                : String(line['DESCRIÇÃO DOS HONORÁRIOS'])
 
-            const data_pagamento = line.DATA
-              ? excelDateToJSDate(line.DATA)
-              : undefined
+            const data_pagamento =
+              typeof line.DATA === 'number'
+                ? excelDateToJSDate(line.DATA)
+                : line.DATA !== 'PENDENTE' && typeof line.DATA === 'string'
+                  ? excelDateToJSDate(line.DATA)
+                  : undefined
 
             const data_vencimento =
               typeof line['DATA DO CRÉDITO'] === 'number'
                 ? excelDateToJSDate(line['DATA DO CRÉDITO'])
-                : undefined
+                : line['DATA DO CRÉDITO'] !== 'PENDENTE' &&
+                    typeof line['DATA DO CRÉDITO'] === 'string'
+                  ? excelDateToJSDate(line['DATA DO CRÉDITO'])
+                  : undefined
 
             const fonte_pagadora =
               line['FONTE PAGADORA'] === '?'
-                ? 'Não informado'
-                : line['FONTE PAGADORA']
+                ? 'NÃO INFORMADO'
+                : String(line['FONTE PAGADORA'])
 
             const recibo_parcela =
               line['N. DO RECIBO/PARCELA'] === '?' ||
               !line['N. DO RECIBO/PARCELA']
-                ? 'Não informado'
-                : line['N. DO RECIBO/PARCELA']
+                ? 'NÃO INFORMADO'
+                : String(line['N. DO RECIBO/PARCELA'])
 
             const baseObject = {
               cliente,
@@ -125,9 +136,9 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               valor: line.VALOR,
               status: line.PAGO === 'OK' ? 'PAGO' : 'PENDENTE',
               fonte_pagadora,
-              banco: line.BANCO ? line.BANCO : 'Não informado',
+              banco: line.BANCO ? line.BANCO : 'NÃO INFORMADO',
               data_pagamento,
-              socio: line.SOCIO ? line.SOCIO : 'Não informado',
+              socio: line.SOCIO ? line.SOCIO : 'NÃO INFORMADO',
               empresa,
               valor_validado: 0,
             }
@@ -173,8 +184,6 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
           },
         )
 
-        unlinkSync(filePath)
-
         const register_amount = excel.length
 
         return reply.send({ register_amount, excel })
@@ -192,6 +201,8 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
         } else {
           return reply.internalServerError(String(error))
         }
+      } finally {
+        unlinkSync(filePath)
       }
     },
   )
