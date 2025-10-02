@@ -15,19 +15,20 @@ type JwtEckermannSchema = {
 type Node = {
   pessoaId: string
   descricao: string
+  createdAt: string
   dia: string
   efetivado: boolean
   faturar: boolean
   natureza: {
     valor1: string
-  }
+  } | null
   processoId: string
   tipo: {
     valor1: string
-  }
+  } | null
   unidade: {
     valor1: string
-  }
+  } | null
   valor: string
 }
 
@@ -53,8 +54,8 @@ const dataReturn = z.object({
   tipo: z.string(),
   unidade: z.string(),
   valor: z.number(),
-  efetivado: z.union([z.literal(0), z.literal(1)]),
-  faturado: z.union([z.literal(0), z.literal(1)]),
+  efetivado: z.number(),
+  faturado: z.number(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -64,12 +65,10 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
     '/eckermann/tecnoJuris',
     {
       schema: {
-        querystring: z.object({
-          amountRegisters: z.coerce.number().default(20)
-        }),
         response: {
           200: z.object({
-            data: z.array(dataReturn)
+            registerAmount: z.number(),
+            data: z.array(dataReturn),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -77,8 +76,6 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { amountRegisters } = request.query
-
       const {
         data: {
           usuario: { jwt_token },
@@ -94,109 +91,81 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
         },
       )
 
-      // let beforeCursor = ''
-      // let hasPreviousPage: boolean = true
+      let beforeCursor: string | undefined
+      let hasPreviousPage = true
       const allNodes: Node[] = []
 
-      const { data } = await app.axios.post<DataNodes>(
-        'https://eyz.tecnojuris1.com.br/graphql',
-        {
-          query: `
-            query ($last: Int) {
-              valoresConnection(last: $last) {
-                pageInfo {
-                  hasPreviousPage
-                  startCursor
-                }
-                nodes {
-                  pessoaId
-                  descricao
-                  dia
-                  efetivado
-                  faturar
-                  natureza {
-                    valor1
+      while (hasPreviousPage) {
+        const { data } = await app.axios.post<DataNodes>(
+          'https://eyz.tecnojuris1.com.br/graphql',
+          {
+            query: `
+              query ($last: Int, $before: String) {
+                valoresConnection(last: $last, before: $before) {
+                  pageInfo {
+                    hasPreviousPage
+                    startCursor
                   }
-                  processoId
-                  tipo {
-                    valor1
+                  nodes {
+                    pessoaId
+                    descricao
+                    createdAt
+                    dia
+                    efetivado
+                    faturar
+                    natureza { valor1 }
+                    processoId
+                    tipo { valor1 }
+                    unidade { valor1 }
+                    valor
                   }
-                  unidade {
-                    valor1
-                  }
-                  valor
                 }
               }
-            }
-          `,
-          variables: { last: amountRegisters },
-        },
-        { headers: { AUTH_TOKEN: jwt_token } },
-      )
+            `,
+            variables: { last: 200, before: beforeCursor },
+          },
+          { headers: { AUTH_TOKEN: jwt_token } },
+        )
 
-      const connection = data.data.valoresConnection
-      const nodes = connection.nodes
+        const connection = data.data.valoresConnection
+        const nodes = connection.nodes
 
-      allNodes.push(...nodes)
+        const dataMinima = new Date('2025-09-15')
 
-      // while (hasPreviousPage) {
-      //   const { data } = await app.axios.post<DataNodes>(
-      //     'https://eyz.tecnojuris1.com.br/graphql',
-      //     {
-      //       query: `
-      //         query ($last: Int, $before: String) {
-      //           valoresConnection(last: $last, before: $before) {
-      //             pageInfo {
-      //               hasPreviousPage
-      //               startCursor
-      //             }
-      //             nodes {
-      //               pessoaId
-      //               descricao
-      //               dia
-      //               efetivado
-      //               faturar
-      //               natureza {
-      //                 valor1
-      //               }
-      //               processoId
-      //               tipo {
-      //                 valor1
-      //               }
-      //               unidade {
-      //                 valor1
-      //               }
-      //               valor
-      //             }
-      //           }
-      //         }
-      //       `,
-      //       variables: { last: 20, before: beforeCursor }
-      //     },
-      //     { headers: { AUTH_TOKEN: jwt_token } }
-      //   )
+        // filtra apenas registros de 2025
+        const registrosValidos = nodes.filter((n) => {
+          if (!n) return false
+          const dataRegistro = new Date(n.createdAt || n.dia)
+          if (!dataRegistro) return false
 
-      //   const connection = data.data.valoresConnection
-      //   const nodes = connection.nodes
+          return dataRegistro >= dataMinima
+        })
 
-      //   console.log(nodes[19])
+        // se encontrou algum registro de ano < 2025, já pode parar o loop
+        const encontrouAnoAnterior = nodes.some((n) => {
+          if (!n) return false
+          const dataRegistro = new Date(n.createdAt || n.dia)
+          if (!dataRegistro) return false
 
-      //   const stopIndex = nodes.findIndex(n => {
-      //     const year = new Date(n.dia).getFullYear()
-      //     return year < 2025
-      //   })
+          return dataRegistro < dataMinima
+        })
 
-      //   if (stopIndex !== -1) {
-      //     allNodes.push(...nodes.slice(0, stopIndex))
-      //     console.log("Parando porque encontrei registro de ano < 2025")
-      //     break
-      //   }
+        if (encontrouAnoAnterior) {
+          console.log(
+            '🚨 Encontrado registro de ano anterior a 09/2025, parando o loop',
+          )
+          hasPreviousPage = false
+          beforeCursor = undefined
+        } else {
+          hasPreviousPage = connection.pageInfo.hasPreviousPage
+          beforeCursor = connection.pageInfo.startCursor
+        }
 
-      //   allNodes.push(...nodes)
+        allNodes.push(...registrosValidos)
 
-      //   hasPreviousPage = connection.pageInfo.hasPreviousPage
-      //   beforeCursor = connection.pageInfo.startCursor
-      // }
+        // pequena pausa para não floodar a API
+        await new Promise((r) => setTimeout(r, 200))
+      }
 
       const pessoaIds = Array.from(new Set(allNodes.map((n) => n.pessoaId)))
 
@@ -228,36 +197,43 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
           const { nodes } = data.data.pessoasConnection
           pessoasNomesIds.push(...nodes)
+
+          await new Promise((r) => setTimeout(r, 200))
         }),
       )
 
       const pessoaMap = new Map<string, string>()
-      pessoasNomesIds.forEach(p => {
+      pessoasNomesIds.forEach((p) => {
         pessoaMap.set(p.id, p.nome)
       })
 
-      const transformedData: DataReturn[] = allNodes.map((node) => {
-        const cliente = pessoaMap.get(node.pessoaId) ?? 'Desconhecido'
-        
-        const valor = Number(node.valor.replace('-', ''))
-        const data = new Date(node.dia).toLocaleDateString('pt-BR')
+      const transformedData: DataReturn[] = allNodes
+        .filter((node) => node !== null)
+        .map((node) => {
+          const cliente = pessoaMap.get(node.pessoaId) ?? 'Desconhecido'
 
-        return {
-          id: randomUUID(),
-          cliente,
-          descricao: node.descricao.trim(),
-          data,
-          efetivado: !!node.efetivado ? 1 : 0,
-          faturado: !!node.efetivado ? 1 : 0,
-          natureza: node.natureza.valor1,
-          processoId: node.processoId,
-          tipo: node.tipo.valor1,
-          unidade: node.unidade.valor1,
-          valor,
-        }
+          const valor = Number(node.valor.replace('-', ''))
+          const data = new Date(node.createdAt).toLocaleDateString('pt-BR')
+
+          return {
+            id: randomUUID(),
+            cliente,
+            descricao: node.descricao.trim(),
+            data,
+            efetivado: node.efetivado ? 1 : 0,
+            faturado: node.efetivado ? 1 : 0,
+            natureza: node.natureza ? node.natureza.valor1 : 'NÃO INFORMADO',
+            processoId: node.processoId,
+            tipo: node.tipo ? node.tipo.valor1 : 'NÃO INFORMADO',
+            unidade: node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO',
+            valor,
+          }
+        })
+
+      return reply.send({
+        registerAmount: transformedData.length,
+        data: transformedData,
       })
-
-      return reply.send({ data: transformedData })
     },
   )
 }
