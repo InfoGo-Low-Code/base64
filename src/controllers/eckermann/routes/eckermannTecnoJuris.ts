@@ -213,7 +213,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           const cliente = pessoaMap.get(node.pessoaId) ?? 'Desconhecido'
 
           const valor = Number(node.valor.replace('-', ''))
-          const data = new Date(node.createdAt).toLocaleDateString('pt-BR')
+          const data = new Date(node.createdAt).toISOString().split('T')[0]
 
           return {
             id: randomUUID(),
