@@ -22,6 +22,7 @@ import { jsonToStringGemini } from './controllers/jsonToStringGemini'
 import { invistaiiRoutes } from './controllers/invistaii/invistaii.routes'
 import { audisaRoutes } from './controllers/audisa/audisa.routes'
 import { fileExtensionConverter } from './controllers/fileExtensionConverter'
+import { covabraRoutes } from './controllers/covabra/covabra.routes'
 
 export const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -49,3 +50,4 @@ app.register(jsonToStringGemini)
 app.register(invistaiiRoutes)
 app.register(audisaRoutes)
 app.register(fileExtensionConverter)
+app.register(covabraRoutes)

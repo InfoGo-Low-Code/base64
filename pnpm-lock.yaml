@@ -62,6 +62,9 @@ importers:
       mssql:
         specifier: ^11.0.1
         version: 11.0.1
+      postgres:
+        specifier: ^3.4.7
+        version: 3.4.7
       python-shell:
         specifier: ^5.0.0
         version: 5.0.0
@@ -2191,6 +2194,10 @@ packages:
         optional: true
       yaml:
         optional: true
+
+  postgres@3.4.7:
+    resolution: {integrity: sha512-Jtc2612XINuBjIl/QTWsV5UvE8UHuNblcO3vVADSrKsrc6RqGX6lOW1cEo3CM2v0XG4Nat8nI+YM7/f26VxXLw==}
+    engines: {node: '>=12'}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -5121,6 +5128,8 @@ snapshots:
     optionalDependencies:
       tsx: 4.19.3
       yaml: 2.7.1
+
+  postgres@3.4.7: {}
 
   prelude-ls@1.2.1: {}
 
