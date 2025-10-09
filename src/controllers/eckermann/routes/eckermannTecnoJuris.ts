@@ -104,9 +104,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
       schema: {
         response: {
           200: z.object({
-            // registerAmount: z.number(),
-            // data: z.array(dataReturn),
-            result: z.any(),
+            registerAmount: z.number(),
+            data: z.array(dataReturn),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -341,7 +340,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           })
 
         return reply.send({
-          result: transformedData,
+          registerAmount: transformedData.length,
+          data: transformedData,
         })
       } catch (err: any) {
         console.error('Erro ao processar:', err)
