@@ -1,5 +1,5 @@
-import { FastifyZodTypedInstance } from "@/@types/fastifyZodTypedInstance"
-import { z } from "zod"
+import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
+import { z } from 'zod'
 import covabra from '@/database/covabra'
 
 export function covabraRequestDb(app: FastifyZodTypedInstance) {
@@ -9,15 +9,20 @@ export function covabraRequestDb(app: FastifyZodTypedInstance) {
       schema: {
         body: z.object({
           query: z.string(),
-        })
-      }
+        }),
+        response: {
+          200: z.object({
+            result: z.any(),
+          }),
+        },
+      },
     },
     async (request, reply) => {
       const { query } = request.body
 
       const result = await covabra.unsafe(query)
 
-      console.log(result)
-    }
+      return reply.send({ result })
+    },
   )
 }
