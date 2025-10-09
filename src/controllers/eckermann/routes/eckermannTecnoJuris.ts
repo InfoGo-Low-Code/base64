@@ -30,9 +30,12 @@ type Node = {
     valor1: string
   } | null
   valor: string
+  usuario: {
+    nome: string
+  }
 }
 
-type DataNodes = {
+type ValoresNodes = {
   data: {
     valoresConnection: {
       pageInfo: {
@@ -44,21 +47,55 @@ type DataNodes = {
   }
 }
 
+type JuridicoNodes = {
+  data: {
+    juridicoProcessosConnection: {
+      nodes: {
+        id: string
+        pasta: string
+        distribuicoes: {
+          participacoes: {
+            pessoa: {
+              nome: string
+              pessoaTipo: {
+                valor1: string
+              }
+            }
+          }[]
+        }[]
+      }[]
+    }
+  }
+}
+
 const dataReturn = z.object({
   id: z.string(),
   cliente: z.string(),
   descricao: z.string(),
   data: z.string(),
   natureza: z.string(),
-  processoId: z.string(),
   tipo: z.string(),
   unidade: z.string(),
   valor: z.number(),
   efetivado: z.number(),
   faturado: z.number(),
+  pasta: z.string(),
+  partesContrarias: z.string(),
+  usuario: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
+
+async function processInBatches<T>(
+  items: T[],
+  handler: (item: T) => Promise<void>,
+  batchSize = 15,
+) {
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize)
+    await Promise.all(batch.map(handler))
+  }
+}
 
 export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
   app.get(
@@ -67,39 +104,41 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
       schema: {
         response: {
           200: z.object({
-            registerAmount: z.number(),
-            data: z.array(dataReturn),
+            // registerAmount: z.number(),
+            // data: z.array(dataReturn),
+            result: z.any(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
         },
       },
     },
-    async (request, reply) => {
-      const {
-        data: {
-          usuario: { jwt_token },
-        },
-      } = await app.axios.post<JwtEckermannSchema>(
-        'https://eyz.tecnojuris1.com.br/usuarios/sign_in.json',
-        {
-          usuario: {
-            email: 'lmaximiano@eckermann.adv.br',
-            password: 'CWRFBC',
-            subdomain: 'eyz',
+    async (_, reply) => {
+      try {
+        const {
+          data: {
+            usuario: { jwt_token },
           },
-        },
-      )
-
-      let beforeCursor: string | undefined
-      let hasPreviousPage = true
-      const allNodes: Node[] = []
-
-      while (hasPreviousPage) {
-        const { data } = await app.axios.post<DataNodes>(
-          'https://eyz.tecnojuris1.com.br/graphql',
+        } = await app.axios.post<JwtEckermannSchema>(
+          'https://eyz.tecnojuris1.com.br/usuarios/sign_in.json',
           {
-            query: `
+            usuario: {
+              email: 'lmaximiano@eckermann.adv.br',
+              password: 'CWRFBC',
+              subdomain: 'eyz',
+            },
+          },
+        )
+
+        let beforeCursor: string | undefined
+        let hasPreviousPage = true
+        const allNodes: Node[] = []
+
+        while (hasPreviousPage) {
+          const { data } = await app.axios.post<ValoresNodes>(
+            'https://eyz.tecnojuris1.com.br/graphql',
+            {
+              query: `
               query ($last: Int, $before: String) {
                 valoresConnection(last: $last, before: $before) {
                   pageInfo {
@@ -118,61 +157,60 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
                     tipo { valor1 }
                     unidade { valor1 }
                     valor
+                    usuario {
+                      nome
+                    }
                   }
                 }
               }
             `,
-            variables: { last: 200, before: beforeCursor },
-          },
-          { headers: { AUTH_TOKEN: jwt_token } },
-        )
-
-        const connection = data.data.valoresConnection
-        const nodes = connection.nodes
-
-        const dataMinima = new Date('2025-09-15')
-
-        // filtra apenas registros de 2025
-        const registrosValidos = nodes.filter((n) => {
-          if (!n) return false
-          const dataRegistro = new Date(n.createdAt || n.dia)
-          if (!dataRegistro) return false
-
-          return dataRegistro >= dataMinima
-        })
-
-        // se encontrou algum registro de ano < 2025, já pode parar o loop
-        const encontrouAnoAnterior = nodes.some((n) => {
-          if (!n) return false
-          const dataRegistro = new Date(n.createdAt || n.dia)
-          if (!dataRegistro) return false
-
-          return dataRegistro < dataMinima
-        })
-
-        if (encontrouAnoAnterior) {
-          console.log(
-            '🚨 Encontrado registro de ano anterior a 09/2025, parando o loop',
+              variables: { last: 200, before: beforeCursor },
+            },
+            { headers: { AUTH_TOKEN: jwt_token } },
           )
-          hasPreviousPage = false
-          beforeCursor = undefined
-        } else {
-          hasPreviousPage = connection.pageInfo.hasPreviousPage
-          beforeCursor = connection.pageInfo.startCursor
+
+          const connection = data.data.valoresConnection
+          const nodes = connection.nodes
+
+          const dataMinima = new Date('2025-10-01')
+
+          // filtra apenas registros de 2025
+          const registrosValidos = nodes.filter((n) => {
+            if (!n) return false
+            const dataRegistro = new Date(n.createdAt || n.dia)
+            if (!dataRegistro) return false
+
+            return dataRegistro >= dataMinima
+          })
+
+          // se encontrou algum registro de ano < 2025, já pode parar o loop
+          const encontrouAnoAnterior = nodes.some((n) => {
+            if (!n) return false
+            const dataRegistro = new Date(n.createdAt || n.dia)
+            if (!dataRegistro) return false
+
+            return dataRegistro < dataMinima
+          })
+
+          if (encontrouAnoAnterior) {
+            hasPreviousPage = false
+            beforeCursor = undefined
+          } else {
+            hasPreviousPage = connection.pageInfo.hasPreviousPage
+            beforeCursor = connection.pageInfo.startCursor
+          }
+
+          allNodes.push(...registrosValidos)
+
+          // pequena pausa para não floodar a API
+          await new Promise((r) => setTimeout(r, 200))
         }
 
-        allNodes.push(...registrosValidos)
+        const pessoaIds = Array.from(new Set(allNodes.map((n) => n.pessoaId)))
 
-        // pequena pausa para não floodar a API
-        await new Promise((r) => setTimeout(r, 200))
-      }
+        const pessoasNomesIds: { id: string; nome: string }[] = []
 
-      const pessoaIds = Array.from(new Set(allNodes.map((n) => n.pessoaId)))
-
-      const pessoasNomesIds: { id: string; nome: string }[] = []
-
-      await Promise.all(
-        pessoaIds.map(async (id) => {
+        await processInBatches(pessoaIds, async (id) => {
           const { data } = await app.axios.post<{
             data: {
               pessoasConnection: { nodes: { id: string; nome: string }[] }
@@ -196,44 +234,119 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           )
 
           const { nodes } = data.data.pessoasConnection
+
           pessoasNomesIds.push(...nodes)
-
-          await new Promise((r) => setTimeout(r, 200))
-        }),
-      )
-
-      const pessoaMap = new Map<string, string>()
-      pessoasNomesIds.forEach((p) => {
-        pessoaMap.set(p.id, p.nome)
-      })
-
-      const transformedData: DataReturn[] = allNodes
-        .filter((node) => node !== null)
-        .map((node) => {
-          const cliente = pessoaMap.get(node.pessoaId) ?? 'Desconhecido'
-
-          const valor = Number(node.valor.replace('-', ''))
-          const data = new Date(node.createdAt).toISOString().split('T')[0]
-
-          return {
-            id: randomUUID(),
-            cliente,
-            descricao: node.descricao.trim(),
-            data,
-            efetivado: node.efetivado ? 1 : 0,
-            faturado: node.efetivado ? 1 : 0,
-            natureza: node.natureza ? node.natureza.valor1 : 'NÃO INFORMADO',
-            processoId: node.processoId,
-            tipo: node.tipo ? node.tipo.valor1 : 'NÃO INFORMADO',
-            unidade: node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO',
-            valor,
-          }
         })
 
-      return reply.send({
-        registerAmount: transformedData.length,
-        data: transformedData,
-      })
+        const pessoaMap = new Map<string, string>()
+        pessoasNomesIds.forEach((p) => {
+          pessoaMap.set(p.id, p.nome)
+        })
+
+        const processosId = Array.from(
+          new Set(allNodes.map((n) => n.processoId)),
+        )
+
+        const pastasProcessos: {
+          id: string
+          pasta: string
+          partesContrarias: string[]
+        }[] = []
+
+        await processInBatches(processosId, async (id) => {
+          const { data } = await app.axios.post<JuridicoNodes>(
+            'https://eyz.tecnojuris1.com.br/graphql',
+            {
+              query: `
+                query ($id: String) {
+                  juridicoProcessosConnection(processoId: $id) {
+                    nodes {
+                      id
+                      pasta
+                      distribuicoes {
+                        participacoes {
+                          pessoa {
+                            nome
+                            pessoaTipo {
+                              valor1
+                              valor2
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { id },
+            },
+            { headers: { AUTH_TOKEN: jwt_token } },
+          )
+
+          const { nodes } = data.data.juridicoProcessosConnection
+
+          nodes.forEach(({ id, pasta, distribuicoes = [] }) => {
+            const partesContrarias = distribuicoes
+              .flatMap((d) => d.participacoes ?? [])
+              .filter((p) => p.pessoa.pessoaTipo?.valor1 === 'Parte Contrária')
+              .map((p) => p.pessoa.nome)
+
+            pastasProcessos.push({
+              id,
+              pasta,
+              partesContrarias: partesContrarias ?? null,
+            })
+          })
+        })
+
+        const pastaMap = new Map<
+          string,
+          { pasta: string; partesContrarias: string[] }
+        >()
+        pastasProcessos.forEach((p) => {
+          pastaMap.set(p.id, {
+            pasta: p.pasta,
+            partesContrarias: p.partesContrarias,
+          })
+        })
+
+        const transformedData: DataReturn[] = allNodes
+          .filter((node) => node !== null)
+          .map((node) => {
+            const cliente = pessoaMap.get(node.pessoaId) ?? 'NÃO INFORMADO'
+
+            const pastaData = pastaMap.get(node.processoId)
+            const pasta = pastaData?.pasta ?? 'NÃO INFORMADO'
+            const partesContrarias =
+              pastaData?.partesContrarias.join(', ') ?? 'NÃO INFORMADO'
+
+            const valor = Number(node.valor.replace('-', ''))
+            const data = new Date(node.createdAt).toISOString().split('T')[0]
+
+            return {
+              id: randomUUID(),
+              cliente,
+              descricao: node.descricao.trim(),
+              data,
+              efetivado: node.efetivado == true ? 1 : 0,
+              faturado: node.efetivado === true ? 1 : 0,
+              natureza: node.natureza ? node.natureza.valor1 : 'NÃO INFORMADO',
+              tipo: node.tipo ? node.tipo.valor1 : 'NÃO INFORMADO',
+              unidade: node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO',
+              valor,
+              pasta,
+              partesContrarias,
+              usuario: node.usuario.nome,
+            }
+          })
+
+        return reply.send({
+          result: transformedData,
+        })
+      } catch (err: any) {
+        console.error('Erro ao processar:', err)
+        return reply.internalServerError(err.message)
+      }
     },
   )
 }
