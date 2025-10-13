@@ -20,9 +20,13 @@ export function covabraRequestDb(app: FastifyZodTypedInstance) {
     async (request, reply) => {
       const { query } = request.body
 
-      const result = await covabra.unsafe(query)
+      try {
+        const result = await covabra.unsafe(query)
 
-      return reply.send({ result })
+        return reply.send({ result })
+      } catch (error: any) {
+        return reply.internalServerError(error.message)
+      }
     },
   )
 }
