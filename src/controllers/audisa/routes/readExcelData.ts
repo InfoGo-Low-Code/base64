@@ -1,7 +1,7 @@
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { getDwAudisaConnection } from '@/database/dwAudisa'
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
-import { basename } from 'node:path'
+import { basename, extname } from 'node:path'
 import { readFile, utils } from 'xlsx'
 import { z } from 'zod'
 import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorResponseSchema'
@@ -141,20 +141,28 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       }
 
       let filePath = ''
-
+      
       try {
         const { data } = await app.axios.get(url, {
           responseType: 'arraybuffer',
         })
-
+        
         const filename = basename(new URL(url).pathname)
         filePath = `./uploads/${filename}`
+        
+        const extension = extname(filename).slice(1)
+        
+        const allowedExtensions = ['xls', 'xlsx']
+        
+        if (!allowedExtensions.includes(extension)) {
+          throw new Error('Extensão de arquivo inválida')
+        }
 
         writeFileSync(filePath, data)
-      } catch {
+      } catch (e: any) {
         setRouteUsageAudisa(false)
 
-        return reply.internalServerError('Erro ao baixar arquivo')
+        return reply.internalServerError(e.message)
       }
 
       const workbook = readFile(filePath)
