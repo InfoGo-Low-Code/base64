@@ -117,9 +117,12 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       schema: {
         body: z.object({
           url: z.string().url(),
-          empresa: z
-            .string()
-            .transform((value) => value.toLowerCase().replace(/ /g, '_')),
+          empresa: z.string().transform((value) =>
+            value
+              .toLowerCase()
+              .replace(/ /g, '_')
+              .replace(/[^\w_]/g, ''),
+          ),
         }),
         response: {
           201: z.object({
@@ -141,19 +144,19 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       }
 
       let filePath = ''
-      
+
       try {
         const { data } = await app.axios.get(url, {
           responseType: 'arraybuffer',
         })
-        
+
         const filename = basename(new URL(url).pathname)
         filePath = `./uploads/${filename}`
-        
+
         const extension = extname(filename).slice(1)
-        
+
         const allowedExtensions = ['xls', 'xlsx']
-        
+
         if (!allowedExtensions.includes(extension)) {
           throw new Error('Extensão de arquivo inválida')
         }
