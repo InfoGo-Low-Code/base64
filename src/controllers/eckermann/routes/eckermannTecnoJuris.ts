@@ -82,6 +82,7 @@ const dataReturn = z.object({
   pasta: z.string(),
   partesContrarias: z.string(),
   usuario: z.string(),
+  validacao: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -324,6 +325,24 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             const valor = Number(node.valor.replace('-', ''))
             const data = new Date(node.createdAt).toISOString().split('T')[0]
 
+            const tipo = node.tipo ? node.tipo.valor1 : 'NÃO INFORMADO'
+
+            const unidade = node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO'
+
+            let validacao = 'OK'
+
+            if (tipo === 'NÃO INFORMADO' || tipo === '' || tipo === null) {
+              validacao = 'Erro: Tipo não preenchido'
+            } else if (valor === null || valor === 0 || isNaN(valor)) {
+              validacao = 'Erro: Valor não preenchido'
+            } else if (
+              ['Custas processuais', 'Depósito', 'Erro interno'].includes(tipo)
+            ) {
+              if (unidade === null || unidade !== 'despesas - custas') {
+                validacao = 'Erro: Unidade incorreta para o tipo'
+              }
+            }
+
             return {
               id: randomUUID(),
               cliente,
@@ -332,12 +351,13 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               efetivado: node.efetivado == true ? 1 : 0,
               faturado: node.efetivado === true ? 1 : 0,
               natureza: node.natureza ? node.natureza.valor1 : 'NÃO INFORMADO',
-              tipo: node.tipo ? node.tipo.valor1 : 'NÃO INFORMADO',
-              unidade: node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO',
+              tipo,
+              unidade,
               valor,
               pasta,
               partesContrarias,
               usuario: node.usuario.nome,
+              validacao,
             }
           })
 
