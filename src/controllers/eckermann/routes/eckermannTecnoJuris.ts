@@ -205,7 +205,9 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           await new Promise((r) => setTimeout(r, 200))
         }
 
-        const pessoaIds = Array.from(new Set(allNodes.map((n) => n.pessoaId)))
+        const pessoaIds = Array.from(
+          new Set(allNodes.map((n) => n.pessoaId).filter(Boolean)),
+        )
 
         const pessoasNomesIds: { id: string; nome: string }[] = []
 
@@ -243,7 +245,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
         })
 
         const processosId = Array.from(
-          new Set(allNodes.map((n) => n.processoId)),
+          new Set(allNodes.map((n) => n.processoId).filter(Boolean)),
         )
 
         const pastasProcessos: {
