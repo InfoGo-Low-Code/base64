@@ -332,14 +332,14 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             let validacao = 'OK'
 
             if (tipo === 'NÃO INFORMADO' || tipo === '' || tipo === null) {
-              validacao = 'Erro: Tipo não preenchido'
+              validacao = 'Tipo não preenchido'
             } else if (valor === null || valor === 0 || isNaN(valor)) {
-              validacao = 'Erro: Valor não preenchido'
+              validacao = 'Valor não preenchido'
             } else if (
-              ['Custas processuais', 'Depósito', 'Erro interno'].includes(tipo)
+              ['custas processuais', 'depósito', 'erro interno'].includes(tipo.toLocaleLowerCase())
             ) {
-              if (unidade === null || unidade !== 'despesas - custas') {
-                validacao = 'Erro: Unidade incorreta para o tipo'
+              if (!unidade || unidade.toLocaleLowerCase() !== 'despesas - custas') {
+                validacao = 'Unidade incorreta para o tipo'
               }
             }
 
