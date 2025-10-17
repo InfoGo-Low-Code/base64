@@ -288,10 +288,12 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           const { nodes } = data.data.juridicoProcessosConnection
 
           nodes.forEach(({ id, pasta, distribuicoes = [] }) => {
-            const partesContrarias = distribuicoes
+            const partesContrariasUnicas = distribuicoes
               .flatMap((d) => d.participacoes ?? [])
               .filter((p) => p.pessoa.pessoaTipo?.valor1 === 'Parte Contrária')
               .map((p) => p.pessoa.nome)
+
+            const partesContrarias = Array.from(new Set(partesContrariasUnicas))
 
             pastasProcessos.push({
               id,
