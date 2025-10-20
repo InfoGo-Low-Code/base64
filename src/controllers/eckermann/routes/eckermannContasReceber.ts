@@ -35,6 +35,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
           200: z.object({
             registrosInseridos: z.number(),
             registrosDuplicados: z.number(),
+            registrosAtualizados: z.number(),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -52,7 +53,69 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
         return val.toString()
       }
 
-      const comandos: string[] = registros.map((item) => {
+      const idsAtualizarStatus: string[] = []
+
+      try {
+        await Promise.all(
+          registros.map(
+            async ({
+              cliente,
+              carteira,
+              descricao_honorario,
+              data_vencimento,
+              valor,
+              recibo_parcela,
+              fonte_pagadora,
+              empresa,
+              status: statusLancado,
+            }) => {
+              const { recordset } = await db.query<{
+                id: string
+                status: string
+              }>(`
+              SELECT id, status
+              FROM eckermann_contas_a_receber
+              WHERE cliente = '${cliente}'
+                AND carteira = '${carteira}'
+                AND descricao_honorario = '${descricao_honorario}'
+                AND data_vencimento = '${data_vencimento}'
+                AND valor = ${valor}
+                AND recibo_parcela = '${recibo_parcela}'
+                AND fonte_pagadora = '${fonte_pagadora}'
+                AND empresa = '${empresa}'
+            `)
+
+              recordset.forEach(({ id, status }) => {
+                if (status === 'PENDENTE' && statusLancado === 'PAGO') {
+                  idsAtualizarStatus.push(id)
+                }
+              })
+            },
+          ),
+        )
+      } catch (error: any) {
+        reply.internalServerError(error.message)
+      }
+
+      if (idsAtualizarStatus.length > 0) {
+        const idsFormatados = idsAtualizarStatus.join("', '")
+
+        try {
+          await db.query(`
+            UPDATE eckermann_contas_a_receber
+            SET status = 'PAGO'
+            WHERE id IN ('${idsFormatados}')
+          `)
+        } catch (error: any) {
+          return reply.internalServerError(error.message)
+        }
+      }
+
+      const registrosParaInserir = registros.filter(
+        (item) => !idsAtualizarStatus.includes(item.id),
+      )
+
+      const comandos: string[] = registrosParaInserir.map((item) => {
         const campos = Object.keys(item)
         const values = campos.map((campo) => toSQLValue((item as any)[campo]))
 
@@ -72,7 +135,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
 
       try {
         let registrosInseridos = 0
-        let registrosDuplicados = registros.length
+        let registrosDuplicados = registrosParaInserir.length
 
         const transaction = new sql.Transaction(db)
         await transaction.begin()
@@ -94,9 +157,15 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
 
         registrosDuplicados -= registrosInseridos
 
+        const registrosAtualizados = idsAtualizarStatus.length
+
         await transaction.commit()
 
-        return reply.send({ registrosDuplicados, registrosInseridos })
+        return reply.send({
+          registrosDuplicados,
+          registrosInseridos,
+          registrosAtualizados,
+        })
       } catch (error: any) {
         return reply.notAcceptable(
           `Erro ao executar comandos MERGE em batch: ${error.message}`,
