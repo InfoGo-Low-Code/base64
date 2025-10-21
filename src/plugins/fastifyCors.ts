@@ -4,7 +4,7 @@ import { fastifyCors as cors } from '@fastify/cors'
 export async function fastifyCors(app: FastifyZodTypedInstance) {
   await app.register(cors, {
     origin: '*',
-    credentials: true,
+    credentials: false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     exposedHeaders: ['Content-Disposition', 'Content-Type'],
   })
