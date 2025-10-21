@@ -81,6 +81,7 @@ const dataReturn = z.object({
   faturado: z.number(),
   pasta: z.string(),
   partesContrarias: z.string(),
+  processoId: z.string(),
   poloCliente: z.string(),
   usuario: z.string(),
   validacao: z.string(),
@@ -310,9 +311,6 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               (p) => p.pessoa.pessoaTipo?.valor1 === 'Cliente',
             )
 
-            const autor: string[] = []
-            const reu: string[] = []
-
             const poloCliente: string[] = []
 
             if (clientes.length > 0) {
@@ -412,6 +410,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               pasta,
               partesContrarias,
               poloCliente,
+              processoId: node.processoId,
               usuario: node.usuario.nome,
               validacao,
             }

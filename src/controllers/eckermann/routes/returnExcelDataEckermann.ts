@@ -134,7 +134,10 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               data_vencimento,
               codigo_identificacao: line['CÓDIGO/NOME DE IDENTIFICAÇÃO'],
               valor: line.VALOR,
-              status: line.PAGO === 'OK' || line.PAGO === 'PAGO' ? 'PAGO' : 'PENDENTE',
+              status:
+                line.PAGO === 'OK' || line.PAGO === 'PAGO'
+                  ? 'PAGO'
+                  : 'PENDENTE',
               fonte_pagadora,
               banco: line.BANCO ? line.BANCO : 'NÃO INFORMADO',
               data_pagamento,
