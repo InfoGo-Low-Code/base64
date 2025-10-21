@@ -81,6 +81,7 @@ const dataReturn = z.object({
   faturado: z.number(),
   pasta: z.string(),
   partesContrarias: z.string(),
+  poloCliente: z.string(),
   usuario: z.string(),
   validacao: z.string(),
 })
@@ -129,6 +130,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             },
           },
         )
+
+        console.log(jwt_token)
 
         let beforeCursor: string | undefined
         let hasPreviousPage = true
@@ -253,6 +256,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           id: string
           pasta: string
           partesContrarias: string[]
+          poloCliente: string[]
         }[] = []
 
         await processInBatches(processosId, async (id) => {
@@ -288,29 +292,70 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           const { nodes } = data.data.juridicoProcessosConnection
 
           nodes.forEach(({ id, pasta, distribuicoes = [] }) => {
-            const partesContrariasUnicas = distribuicoes
-              .flatMap((d) => d.participacoes ?? [])
-              .filter((p) => p.pessoa.pessoaTipo?.valor1 === 'Parte Contrária')
-              .map((p) => p.pessoa.nome)
+            const participacoes = distribuicoes.flatMap(
+              (d) => d.participacoes ?? [],
+            )
 
-            const partesContrarias = Array.from(new Set(partesContrariasUnicas))
+            const partesContrarias = Array.from(
+              new Set(
+                participacoes
+                  .filter(
+                    (p) => p.pessoa.pessoaTipo?.valor1 === 'Parte Contrária',
+                  )
+                  .map((p) => p.pessoa.nome),
+              ),
+            )
+
+            const clientes = participacoes.filter(
+              (p) => p.pessoa.pessoaTipo?.valor1 === 'Cliente',
+            )
+
+            const autor: string[] = []
+            const reu: string[] = []
+
+            const poloCliente: string[] = []
+
+            if (clientes.length > 0) {
+              // Índice do primeiro Cliente
+              const primeiroIndiceCliente = participacoes.findIndex(
+                (p) => p.pessoa.pessoaTipo?.valor1 === 'Cliente',
+              )
+
+              // Se o primeiro cliente aparece na primeira posição geral → Autor
+              if (primeiroIndiceCliente === 0) {
+                poloCliente.push('Autor')
+              }
+
+              // Se há clientes em posições diferentes da primeira → Réu
+              const haClienteForaDaPrimeiraPosicao = participacoes.some(
+                (p, i) =>
+                  p.pessoa.pessoaTipo?.valor1 === 'Cliente' &&
+                  i !== primeiroIndiceCliente,
+              )
+
+              if (haClienteForaDaPrimeiraPosicao) {
+                poloCliente.push('Réu')
+              }
+            }
 
             pastasProcessos.push({
               id,
               pasta,
               partesContrarias: partesContrarias ?? null,
+              poloCliente,
             })
           })
         })
 
         const pastaMap = new Map<
           string,
-          { pasta: string; partesContrarias: string[] }
+          { pasta: string; partesContrarias: string[]; poloCliente: string[] }
         >()
         pastasProcessos.forEach((p) => {
           pastaMap.set(p.id, {
             pasta: p.pasta,
             partesContrarias: p.partesContrarias,
+            poloCliente: p.poloCliente,
           })
         })
 
@@ -331,6 +376,9 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
             const unidade = node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO'
 
+            const poloCliente =
+              pastaData?.poloCliente.join(', ') ?? 'NÃO INFORMADO'
+
             let validacao = 'OK'
 
             if (tipo === 'NÃO INFORMADO' || tipo === '' || tipo === null) {
@@ -338,9 +386,14 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             } else if (valor === null || valor === 0 || isNaN(valor)) {
               validacao = 'Valor não preenchido'
             } else if (
-              ['custas processuais', 'depósito', 'erro interno'].includes(tipo.toLocaleLowerCase())
+              ['custas processuais', 'depósito', 'erro interno'].includes(
+                tipo.toLocaleLowerCase(),
+              )
             ) {
-              if (!unidade || unidade.toLocaleLowerCase() !== 'despesas - custas') {
+              if (
+                !unidade ||
+                unidade.toLocaleLowerCase() !== 'despesas - custas'
+              ) {
                 validacao = 'Unidade incorreta para o tipo'
               }
             }
@@ -350,7 +403,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               cliente,
               descricao: node.descricao.trim(),
               data,
-              efetivado: node.efetivado == true ? 1 : 0,
+              efetivado: node.efetivado === true ? 1 : 0,
               faturado: node.efetivado === true ? 1 : 0,
               natureza: node.natureza ? node.natureza.valor1 : 'NÃO INFORMADO',
               tipo,
@@ -358,6 +411,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               valor,
               pasta,
               partesContrarias,
+              poloCliente,
               usuario: node.usuario.nome,
               validacao,
             }
