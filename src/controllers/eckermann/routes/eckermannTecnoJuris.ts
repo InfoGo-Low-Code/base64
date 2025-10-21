@@ -410,7 +410,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               pasta,
               partesContrarias,
               poloCliente,
-              processoId: node.processoId,
+              processoId: node.processoId ?? 'NÃO INFORMADO',
               usuario: node.usuario.nome,
               validacao,
             }
