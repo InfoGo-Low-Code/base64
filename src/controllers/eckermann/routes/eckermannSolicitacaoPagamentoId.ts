@@ -47,7 +47,7 @@ export function solicitacaoPagamentoId(app: FastifyZodTypedInstance) {
 
         const result = await db.request().input('id', sql.NVarChar, id).query(`
             SELECT *
-            FROM eckermann_solicitacoes_pagamento
+            FROM dbo.eckermann_solicitacoes_pagamento
             WHERE id = @id
           `)
 

@@ -46,7 +46,7 @@ export function eckermannExtratos(app: FastifyZodTypedInstance) {
         const insertColumns = campos.join(', ')
         const insertValues = campos.map((campo) => `source.${campo}`).join(', ')
 
-        return `MERGE INTO eckermann_extratos AS target
+        return `MERGE INTO dbo.eckermann_extratos AS target
           USING (SELECT ${sourceSelect}) AS source
           ON target.id = source.id
           WHEN NOT MATCHED THEN

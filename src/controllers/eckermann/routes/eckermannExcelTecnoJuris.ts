@@ -59,7 +59,7 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
             validacao AS 'OBS',
             unidade AS 'UNIDADE',
             '' AS 'DIA DO PAGAMENTO'
-          FROM eckermann_tecnojuris
+          FROM dbo.eckermann_tecnojuris
           WHERE id IN ('${idsFormatados}')
         `)
 

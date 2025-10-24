@@ -104,7 +104,7 @@ export function updateSolicitacoesPagamentoId(app: FastifyZodTypedInstance) {
           .input('empresa', sql.NVarChar, empresa)
           .input('url_arquivo', sql.NVarChar, anexo)
           .input('email_gestor', sql.NVarChar, email_gestor).query(`
-            UPDATE eckermann_solicitacoes_pagamento
+            UPDATE dbo.eckermann_solicitacoes_pagamento
             SET tipo_despesa = @tipo_despesa,
                 numero_processo = @numero_processo,
                 suit = @suit,

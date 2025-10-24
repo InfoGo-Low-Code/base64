@@ -74,7 +74,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
                 status: string
               }>(`
               SELECT id, status
-              FROM eckermann_contas_a_receber
+              FROM dbo.eckermann_contas_a_receber
               WHERE cliente = '${cliente}'
                 AND carteira = '${carteira}'
                 AND descricao_honorario = '${descricao_honorario}'
@@ -102,7 +102,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
 
         try {
           await db.query(`
-            UPDATE eckermann_contas_a_receber
+            UPDATE dbo.eckermann_contas_a_receber
             SET status = 'PAGO'
             WHERE id IN ('${idsFormatados}')
           `)
@@ -126,7 +126,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
         const insertColumns = campos.join(', ')
         const insertValues = campos.map((campo) => `source.${campo}`).join(', ')
 
-        return `MERGE INTO eckermann_contas_a_receber AS target
+        return `MERGE INTO dbo.eckermann_contas_a_receber AS target
           USING (SELECT ${sourceSelect}) AS source
           ON target.id = source.id
           WHEN NOT MATCHED THEN
