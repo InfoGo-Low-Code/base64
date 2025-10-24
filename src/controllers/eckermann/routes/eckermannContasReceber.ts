@@ -21,8 +21,11 @@ const registroSchema = z.object({
   data_pagamento: z.string().nullable().optional(),
   socio: z.string(),
   empresa: z.string(),
-  valor_validado: z.number().nullable(),
+  valor_validado: z.number().nullable().optional(),
 })
+
+type Registro = z.infer<typeof registroSchema>
+const TODOS_CAMPOS = Object.keys(registroSchema.shape) as (keyof Registro)[]
 
 // O schema da resposta foi mantido
 const responseSchema = z.object({
@@ -50,30 +53,45 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
       const { registros } = request.body
       const db = await getEckermannConnection()
 
-      // Função utilitária para formatar valores para SQL, mitigando SQL Injection
-      // (Recomendado usar request.input() para produção, mas mantido aqui para consistência)
+      // Função utilitária para formatar valores para SQL
       function toSQLValue(val: any): string {
-        if (val === null || val === undefined) return 'NULL'
+        // Trata explicitamente null, undefined, e strings vazias como NULL para o banco
+        if (val === null || val === undefined || val === '') return 'NULL' 
         if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`
         if (val instanceof Date) return `'${val.toISOString()}'`
         return val.toString()
       }
 
       // ----------------------------------------------------------------------
-      // PASSO 1: Criar a Tabela Temporária para Coletar Resultados do MERGE
+      // PASSO 1: Preparar os comandos SQL
       // ----------------------------------------------------------------------
-      // Deve ser a primeira coisa na transação
+      
+      // Mapeia os registros para garantir que campos opcionais ausentes (`undefined`) 
+      // sejam preenchidos como `null` antes de gerar o SQL, garantindo que
+      // o `Object.keys` no passo 2 encontre todos os campos necessários.
+      const registrosPreenchidos = registros.map((item) => {
+        const itemPreenchido: Record<string, any> = {}
+        
+        for (const campo of TODOS_CAMPOS) {
+          // Garante que o campo existe no objeto, se for undefined, será null
+          itemPreenchido[campo] = item[campo] === undefined ? null : item[campo]
+        }
+        return itemPreenchido as Registro
+      })
+
+      // Inicia a string SQL com a criação da tabela temporária
       let batchSQL = `
         IF OBJECT_ID('tempdb..#MergeOutput') IS NOT NULL DROP TABLE #MergeOutput;
         CREATE TABLE #MergeOutput (ActionType NVARCHAR(10), Id NVARCHAR(50));
       `
       
       // ----------------------------------------------------------------------
-      // PASSO 2: Gerar Comandos MERGE para TODOS os registros
+      // PASSO 2: Gerar Comandos MERGE para TODOS os registros Preenchidos
       // ----------------------------------------------------------------------
 
-      registros.forEach((item) => {
-        const campos = Object.keys(item)
+      registrosPreenchidos.forEach((item) => {
+        // Agora podemos usar TODOS_CAMPOS (que são consistentes) em vez de Object.keys(item)
+        const campos = TODOS_CAMPOS 
         const values = campos.map((campo) => toSQLValue((item as any)[campo]))
 
         const sourceSelect = campos
@@ -83,7 +101,6 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
         const insertColumns = campos.join(', ')
         const insertValues = campos.map((campo) => `source.${campo}`).join(', ')
 
-        // Campos que definem a unicidade de um registro (chave de negócio)
         const mergeOnCondition = `
             target.cliente = source.cliente 
             AND target.carteira = source.carteira 
@@ -95,20 +112,19 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
             AND target.empresa = source.empresa
         `
         
-        // Concatena o MERGE, usando OUTPUT para armazenar o resultado na tabela temporária
         batchSQL += `
           MERGE INTO dbo.eckermann_contas_a_receber AS target
           USING (SELECT ${sourceSelect}) AS source
           ON ${mergeOnCondition} 
           
-          -- Apenas atualiza se existir (MATCHED) E o status no DB for PENDENTE E no Source for PAGO
+          -- Atualiza o status de PENDENTE para PAGO se as chaves de negócio coincidirem
           WHEN MATCHED AND target.status = 'PENDENTE' AND source.status = 'PAGO' THEN
             UPDATE SET 
               target.status = source.status, 
-              target.data_pagamento = source.data_pagamento,
-              target.valor_validado = source.valor_validado -- Inclua outros campos que podem ser atualizados
+              target.data_pagamento = source.data_pagamento, 
+              target.valor_validado = source.valor_validado
               
-          -- Caso não seja encontrado, insere o registro
+          -- Caso não seja encontrado, insere o registro. Todos os campos são garantidos.
           WHEN NOT MATCHED THEN
             INSERT (${insertColumns}) VALUES (${insertValues})
           
