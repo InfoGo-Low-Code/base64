@@ -5,6 +5,7 @@ import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRe
 import { getEckermannConnection } from '@/database/eckermann'
 import sql from 'mssql'
 
+// O schema permanece o mesmo, definindo a estrutura de um registro
 const registroSchema = z.object({
   id: z.string(),
   cliente: z.string(),
@@ -23,6 +24,13 @@ const registroSchema = z.object({
   valor_validado: z.number().nullable(),
 })
 
+// O schema da resposta foi mantido
+const responseSchema = z.object({
+  registrosInseridos: z.number(),
+  registrosDuplicados: z.number(),
+  registrosAtualizados: z.number(),
+})
+
 export function eckermannContasReceber(app: FastifyZodTypedInstance) {
   app.post(
     '/eckermann/contasReceber',
@@ -32,11 +40,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
           registros: z.array(registroSchema),
         }),
         response: {
-          200: z.object({
-            registrosInseridos: z.number(),
-            registrosDuplicados: z.number(),
-            registrosAtualizados: z.number(),
-          }),
+          200: responseSchema,
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
         },
@@ -46,6 +50,8 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
       const { registros } = request.body
       const db = await getEckermannConnection()
 
+      // Função utilitária para formatar valores para SQL, mitigando SQL Injection
+      // (Recomendado usar request.input() para produção, mas mantido aqui para consistência)
       function toSQLValue(val: any): string {
         if (val === null || val === undefined) return 'NULL'
         if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`
@@ -53,69 +59,20 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
         return val.toString()
       }
 
-      const idsAtualizarStatus: string[] = []
+      // ----------------------------------------------------------------------
+      // PASSO 1: Criar a Tabela Temporária para Coletar Resultados do MERGE
+      // ----------------------------------------------------------------------
+      // Deve ser a primeira coisa na transação
+      let batchSQL = `
+        IF OBJECT_ID('tempdb..#MergeOutput') IS NOT NULL DROP TABLE #MergeOutput;
+        CREATE TABLE #MergeOutput (ActionType NVARCHAR(10), Id NVARCHAR(50));
+      `
+      
+      // ----------------------------------------------------------------------
+      // PASSO 2: Gerar Comandos MERGE para TODOS os registros
+      // ----------------------------------------------------------------------
 
-      try {
-        await Promise.all(
-          registros.map(
-            async ({
-              cliente,
-              carteira,
-              descricao_honorario,
-              data_vencimento,
-              valor,
-              recibo_parcela,
-              fonte_pagadora,
-              empresa,
-              status: statusLancado,
-            }) => {
-              const { recordset } = await db.query<{
-                id: string
-                status: string
-              }>(`
-              SELECT id, status
-              FROM dbo.eckermann_contas_a_receber
-              WHERE cliente = '${cliente}'
-                AND carteira = '${carteira}'
-                AND descricao_honorario = '${descricao_honorario}'
-                AND data_vencimento = '${data_vencimento}'
-                AND valor = ${valor}
-                AND recibo_parcela = '${recibo_parcela}'
-                AND fonte_pagadora = '${fonte_pagadora}'
-                AND empresa = '${empresa}'
-            `)
-
-              recordset.forEach(({ id, status }) => {
-                if (status === 'PENDENTE' && statusLancado === 'PAGO') {
-                  idsAtualizarStatus.push(id)
-                }
-              })
-            },
-          ),
-        )
-      } catch (error: any) {
-        reply.internalServerError(error.message)
-      }
-
-      if (idsAtualizarStatus.length > 0) {
-        const idsFormatados = idsAtualizarStatus.join("', '")
-
-        try {
-          await db.query(`
-            UPDATE dbo.eckermann_contas_a_receber
-            SET status = 'PAGO'
-            WHERE id IN ('${idsFormatados}')
-          `)
-        } catch (error: any) {
-          return reply.internalServerError(error.message)
-        }
-      }
-
-      const registrosParaInserir = registros.filter(
-        (item) => !idsAtualizarStatus.includes(item.id),
-      )
-
-      const comandos: string[] = registrosParaInserir.map((item) => {
+      registros.forEach((item) => {
         const campos = Object.keys(item)
         const values = campos.map((campo) => toSQLValue((item as any)[campo]))
 
@@ -126,40 +83,81 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
         const insertColumns = campos.join(', ')
         const insertValues = campos.map((campo) => `source.${campo}`).join(', ')
 
-        return `MERGE INTO dbo.eckermann_contas_a_receber AS target
+        // Campos que definem a unicidade de um registro (chave de negócio)
+        const mergeOnCondition = `
+            target.cliente = source.cliente 
+            AND target.carteira = source.carteira 
+            AND target.descricao_honorario = source.descricao_honorario
+            AND target.data_vencimento = source.data_vencimento
+            AND target.valor = source.valor
+            AND target.recibo_parcela = source.recibo_parcela
+            AND target.fonte_pagadora = source.fonte_pagadora
+            AND target.empresa = source.empresa
+        `
+        
+        // Concatena o MERGE, usando OUTPUT para armazenar o resultado na tabela temporária
+        batchSQL += `
+          MERGE INTO dbo.eckermann_contas_a_receber AS target
           USING (SELECT ${sourceSelect}) AS source
-          ON target.id = source.id
+          ON ${mergeOnCondition} 
+          
+          -- Apenas atualiza se existir (MATCHED) E o status no DB for PENDENTE E no Source for PAGO
+          WHEN MATCHED AND target.status = 'PENDENTE' AND source.status = 'PAGO' THEN
+            UPDATE SET 
+              target.status = source.status, 
+              target.data_pagamento = source.data_pagamento,
+              target.valor_validado = source.valor_validado -- Inclua outros campos que podem ser atualizados
+              
+          -- Caso não seja encontrado, insere o registro
           WHEN NOT MATCHED THEN
-            INSERT (${insertColumns}) VALUES (${insertValues});`
+            INSERT (${insertColumns}) VALUES (${insertValues})
+          
+          -- Captura o resultado da ação (INSERT ou UPDATE)
+          OUTPUT $action, source.id INTO #MergeOutput (ActionType, Id);
+        `
       })
 
-      try {
-        let registrosInseridos = 0
-        let registrosDuplicados = registrosParaInserir.length
+      // ----------------------------------------------------------------------
+      // PASSO 3: Executar Transação e Contar Resultados
+      // ----------------------------------------------------------------------
 
+      try {
         const transaction = new sql.Transaction(db)
         await transaction.begin()
 
         const requestTx = new sql.Request(transaction)
 
-        // Junta tudo num único batch
-        const batchSQL = comandos.join('\n')
+        // 1. Executa todos os comandos MERGE (que também preenchem #MergeOutput)
+        await requestTx.batch(batchSQL)
 
-        const response = await requestTx.batch(batchSQL)
-
-        // response.rowsAffected é um array com os afetados por cada MERGE
-        if (Array.isArray(response.rowsAffected)) {
-          registrosInseridos = response.rowsAffected.reduce(
-            (acc, v) => acc + v,
-            0,
-          )
-        }
-
-        registrosDuplicados -= registrosInseridos
-
-        const registrosAtualizados = idsAtualizarStatus.length
+        // 2. Seleciona o resumo dos resultados da tabela temporária
+        const { recordset: summary } = await requestTx.query<{
+          ActionType: 'INSERT' | 'UPDATE' | 'DELETE'
+          Total: number
+        }>(`
+          SELECT ActionType, COUNT(*) as Total
+          FROM #MergeOutput
+          GROUP BY ActionType;
+        `)
 
         await transaction.commit()
+        
+        // 3. Processa o relatório
+        let registrosInseridos = 0
+        let registrosAtualizados = 0
+        
+        summary.forEach((row) => {
+          if (row.ActionType === 'INSERT') {
+            registrosInseridos = row.Total
+          } else if (row.ActionType === 'UPDATE') {
+            registrosAtualizados = row.Total
+          }
+        })
+        
+        // Registros duplicados (não afetados) = total de registros - (inseridos + atualizados)
+        const registrosDuplicados =
+          registros.length - (registrosInseridos + registrosAtualizados)
+
 
         return reply.send({
           registrosDuplicados,
