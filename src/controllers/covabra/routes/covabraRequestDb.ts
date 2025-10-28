@@ -23,7 +23,9 @@ export function covabraRequestDb(app: FastifyZodTypedInstance) {
       try {
         const result = await covabra.unsafe(query)
 
-        return reply.send({ result })
+        return reply
+          .header('Access-Control-Allow-Origin', 'https://app.infogo.com.br')
+          .send({ result })
       } catch (error: any) {
         return reply.internalServerError(error.message)
       }
