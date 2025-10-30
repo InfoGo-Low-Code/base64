@@ -10,17 +10,18 @@ const registroSchema = z.object({
   cliente: z.string(),
   carteira: z.string(),
   descricao_honorario: z.string(),
-  data_vencimento: z.string().nullable().optional(),
+  data_vencimento: z.string().optional(),
   codigo_identificacao: z.string(),
   valor: z.number(),
   recibo_parcela: z.string(),
   status: z.string(),
   fonte_pagadora: z.string(),
   banco: z.string(),
-  data_pagamento: z.string().nullable().optional(),
+  data_pagamento: z.string().optional(),
+  obs: z.string().optional(),
   socio: z.string(),
   empresa: z.string(),
-  valor_validado: z.number().nullable().optional(),
+  valor_validado: z.number(),
 })
 
 type Registro = z.infer<typeof registroSchema>
@@ -126,7 +127,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
                     id: dbId,
                     status: registro.status,
                     banco: registro.banco,
-                    valor_validado: registro.valor_validado ?? null,
+                    valor_validado: registro.valor_validado,
                     data_pagamento: registro.data_pagamento ?? null,
                     original_registro_id: registro.id,
                   })

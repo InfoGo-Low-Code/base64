@@ -72,7 +72,9 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               'PAGO',
               'FONTE PAGADORA',
               'BANCO',
+              'OBS',
               'SÓCIO',
+              'VALOR VALIDADO'
             ],
             range: 1,
             blankrows: false,
@@ -104,17 +106,19 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
             const data_pagamento =
               typeof line.DATA === 'number'
                 ? excelDateToJSDate(line.DATA)
-                : line.DATA !== 'PENDENTE' && typeof line.DATA === 'string'
-                  ? excelDateToJSDate(line.DATA)
-                  : undefined
+                : line.DATA === 'PENDENTE' || line.DATA === '?' || !line.DATA || line.DATA.trim() === ''
+                  ? undefined
+                    : excelDateToJSDate(line.DATA)
 
             const data_vencimento =
               typeof line['DATA DO CRÉDITO'] === 'number'
                 ? excelDateToJSDate(line['DATA DO CRÉDITO'])
-                : line['DATA DO CRÉDITO'] !== 'PENDENTE' &&
-                    typeof line['DATA DO CRÉDITO'] === 'string'
-                  ? excelDateToJSDate(line['DATA DO CRÉDITO'])
-                  : undefined
+                : line['DATA DO CRÉDITO'] === 'PENDENTE'
+                || line['DATA DO CRÉDITO'] === '?'
+                || !line['DATA DO CRÉDITO']
+                || line['DATA DO CRÉDITO'].trim() === ''
+                  ? undefined
+                  : excelDateToJSDate(line['DATA DO CRÉDITO'])
 
             const fonte_pagadora =
               line['FONTE PAGADORA'] === '?'
@@ -122,10 +126,13 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
                 : String(line['FONTE PAGADORA'])
 
             const recibo_parcela =
-              line['N. DO RECIBO/PARCELA'] === '?' ||
-              !line['N. DO RECIBO/PARCELA']
+              line['N. DO RECIBO/PARCELA'] === '?' || !line['N. DO RECIBO/PARCELA']
                 ? 'NÃO INFORMADO'
                 : String(line['N. DO RECIBO/PARCELA'])
+
+            const valor_validado = line['VALOR VALIDADO'] === 'SIM' ? 1 : 0
+
+            const obs = !line.OBS || line.OBS === '' ? undefined : line.OBS
 
             const baseObject = {
               cliente,
@@ -142,8 +149,9 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               banco: line.BANCO ? line.BANCO : 'NÃO INFORMADO',
               data_pagamento,
               socio: line.SOCIO ? line.SOCIO : 'NÃO INFORMADO',
+              obs,
               empresa,
-              valor_validado: 0,
+              valor_validado,
             }
 
             if (recibo_parcela.includes('/')) {

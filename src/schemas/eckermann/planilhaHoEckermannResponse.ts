@@ -13,6 +13,7 @@ export const planilhaHoEckermannResponse = z.object({
   fonte_pagadora: z.string(),
   banco: z.string(),
   data_pagamento: z.date().optional(),
+  obs: z.string().optional(),
   socio: z.string(),
   empresa: z.string(),
   valor_validado: z.number(),
