@@ -154,38 +154,38 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               valor_validado,
             }
 
-            if (recibo_parcela.includes('/')) {
-              const [primeiraParcela, segundaParcela] =
-                recibo_parcela.split('/')
+            // if (recibo_parcela.includes('/')) {
+            //   const [primeiraParcela, segundaParcela] =
+            //     recibo_parcela.split('/')
 
-              return Array.from(
-                {
-                  length: Number(segundaParcela) - Number(primeiraParcela) + 1,
-                },
-                (_, idx) => {
-                  const vencimento = baseObject.data_vencimento
-                    ? new Date(baseObject.data_vencimento)
-                    : undefined
+            //   return Array.from(
+            //     {
+            //       length: Number(segundaParcela) - Number(primeiraParcela) + 1,
+            //     },
+            //     (_, idx) => {
+            //       const vencimento = baseObject.data_vencimento
+            //         ? new Date(baseObject.data_vencimento)
+            //         : undefined
 
-                  const pagamento =
-                    idx === 0 ? baseObject.data_pagamento : undefined
+            //       const pagamento =
+            //         idx === 0 ? baseObject.data_pagamento : undefined
 
-                  if (vencimento) {
-                    vencimento.setUTCMonth(vencimento.getUTCMonth() + idx)
-                  }
+            //       if (vencimento) {
+            //         vencimento.setUTCMonth(vencimento.getUTCMonth() + idx)
+            //       }
 
-                  const recibo_parcela = `${Number(primeiraParcela) + idx}/${segundaParcela}`
+            //       const recibo_parcela = `${Number(primeiraParcela) + idx}/${segundaParcela}`
 
-                  return {
-                    ...baseObject,
-                    id: camposConcat(baseObject, recibo_parcela),
-                    data_vencimento: vencimento,
-                    recibo_parcela,
-                    data_pagamento: pagamento,
-                  }
-                },
-              )
-            }
+            //       return {
+            //         ...baseObject,
+            //         id: camposConcat(baseObject, recibo_parcela),
+            //         data_vencimento: vencimento,
+            //         recibo_parcela,
+            //         data_pagamento: pagamento,
+            //       }
+            //     },
+            //   )
+            // }
 
             return {
               ...baseObject,
