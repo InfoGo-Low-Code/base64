@@ -43,6 +43,11 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
       }
 
       let filePath = ''
+      
+      // Armazenamento para IDs únicos e duplicados
+      const seenIds = new Set<string>()
+      const duplicateIdsArray: string[] = []
+      const uniqueExcel: PlanilhaHoEckermannResponse[] = []
 
       try {
         const { data } = await app.axios.get(url, {
@@ -81,11 +86,14 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
           },
         )
 
-        const slicedDataXlsx = dataXlsx.filter(
-          (register) => Object.keys(register).length > 4,
+        const semDuplicados = Array.from(
+          new Map(
+            dataXlsx.map((row) => [JSON.stringify(row), row])
+          ).values()
         )
 
-        const excel: PlanilhaHoEckermannResponse[] = slicedDataXlsx.flatMap(
+        // Refatoração: Usamos um loop simples para processar, filtrar e coletar IDs duplicados
+        semDuplicados.forEach(
           (line) => {
             const cliente =
               line.CLIENTE === '?' || !line.CLIENTE
@@ -108,7 +116,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
                 ? excelDateToJSDate(line.DATA)
                 : line.DATA === 'PENDENTE' || line.DATA === '?' || !line.DATA || line.DATA.trim() === ''
                   ? undefined
-                    : excelDateToJSDate(line.DATA)
+                  : excelDateToJSDate(line.DATA)
 
             const data_vencimento =
               typeof line['DATA DO CRÉDITO'] === 'number'
@@ -154,50 +162,28 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               valor_validado,
             }
 
-            // if (recibo_parcela.includes('/')) {
-            //   const [primeiraParcela, segundaParcela] =
-            //     recibo_parcela.split('/')
-
-            //   return Array.from(
-            //     {
-            //       length: Number(segundaParcela) - Number(primeiraParcela) + 1,
-            //     },
-            //     (_, idx) => {
-            //       const vencimento = baseObject.data_vencimento
-            //         ? new Date(baseObject.data_vencimento)
-            //         : undefined
-
-            //       const pagamento =
-            //         idx === 0 ? baseObject.data_pagamento : undefined
-
-            //       if (vencimento) {
-            //         vencimento.setUTCMonth(vencimento.getUTCMonth() + idx)
-            //       }
-
-            //       const recibo_parcela = `${Number(primeiraParcela) + idx}/${segundaParcela}`
-
-            //       return {
-            //         ...baseObject,
-            //         id: camposConcat(baseObject, recibo_parcela),
-            //         data_vencimento: vencimento,
-            //         recibo_parcela,
-            //         data_pagamento: pagamento,
-            //       }
-            //     },
-            //   )
-            // }
-
-            return {
+            const registroFinal = {
               ...baseObject,
               id: camposConcat(baseObject, recibo_parcela),
               recibo_parcela,
             }
+
+            // Lógica de detecção de duplicidade
+            if (seenIds.has(registroFinal.id)) {
+              // ID já existe, registra como duplicado
+              duplicateIdsArray.push(registroFinal.id)
+            } else {
+              // ID é novo, adiciona ao Set de IDs vistos e à lista final
+              seenIds.add(registroFinal.id)
+              uniqueExcel.push(registroFinal as PlanilhaHoEckermannResponse)
+            }
           },
-        )
+        ) // Fim do forEach
 
-        const register_amount = excel.length
+        const register_amount = uniqueExcel.length
 
-        return reply.send({ register_amount, excel })
+        // Retorna a lista de registros únicos e os IDs duplicados
+        return reply.send({ register_amount, excel: uniqueExcel })
       } catch (error) {
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
@@ -213,7 +199,10 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
           return reply.internalServerError(String(error))
         }
       } finally {
-        unlinkSync(filePath)
+        // Garantir que o arquivo é removido mesmo se houver erro
+        if (filePath && existsSync(filePath)) {
+          unlinkSync(filePath)
+        }
       }
     },
   )
