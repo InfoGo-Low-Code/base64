@@ -14,6 +14,7 @@ export function covabraRequestDb(app: FastifyZodTypedInstance) {
           200: z.object({
             result: z.any(),
           }),
+          500: z.any(),
         },
       },
     },
@@ -27,7 +28,20 @@ export function covabraRequestDb(app: FastifyZodTypedInstance) {
           .header('Access-Control-Allow-Origin', 'https://app.infogo.com.br')
           .send({ result })
       } catch (error: any) {
-        return reply.internalServerError(error.message)
+        console.error('❌ Erro ao executar query:', error)
+
+        return reply
+          .header('Access-Control-Allow-Origin', 'https://app.infogo.com.br')
+          .status(500)
+          .send({
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            detail: error.detail,
+            position: error.position,
+            routine: error.routine,
+            query,
+          })
       }
     },
   )
