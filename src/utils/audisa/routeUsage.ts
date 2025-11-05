@@ -1,18 +1,14 @@
 let routeUsage = false
-let user = ''
-
-export function setRouteUsageAudisa(usage: boolean) {
-  routeUsage = usage
-}
-
-export function getRouteUsageAudisa(): boolean {
-  return routeUsage
-}
+let users: string[] = []
 
 export function setUserUsage(userUsage: string) {
-  user = userUsage
+  users.push(userUsage)
 }
 
-export function getUserUsage(): string {
-  return user
+export function getUserUsage(): string[] {
+  return users
+}
+
+export function removeUserUsage(userUsage: string) {
+  users = users.filter(user => user !== userUsage)
 }

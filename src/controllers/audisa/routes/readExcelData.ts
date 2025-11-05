@@ -8,7 +8,7 @@ import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorRespons
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { ConnectionPool, Request } from 'mssql'
-import { setRouteUsageAudisa, setUserUsage } from '@/utils/audisa/routeUsage'
+import { removeUserUsage, setUserUsage } from '@/utils/audisa/routeUsage'
 
 const excelDataSchema = z.object({
   A: z.string(),
@@ -138,7 +138,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
     async (request, reply) => {
       const { url, empresa, user } = request.body
       
-      setRouteUsageAudisa(true)
+      removeUserUsage(user)
       setUserUsage(user)
 
       if (!existsSync('./uploads')) {
@@ -165,7 +165,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
         writeFileSync(filePath, data)
       } catch (e: any) {
-        setRouteUsageAudisa(false)
+        removeUserUsage(user)
 
         return reply.internalServerError(e.message)
       }
@@ -300,7 +300,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           db,
         )
 
-        setRouteUsageAudisa(false)
+        removeUserUsage(user)
 
         unlinkSync(filePath)
 
@@ -332,7 +332,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       } catch (e: any) {
         unlinkSync(filePath)
 
-        setRouteUsageAudisa(false)
+        removeUserUsage(user)
 
         return reply.internalServerError(e.message)
       }
@@ -346,8 +346,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
       unlinkSync(filePath)
 
-      setRouteUsageAudisa(false)
-      setUserUsage('')
+      removeUserUsage(user)
 
       return reply.status(201).send({
         message: 'Registros inseridos com sucesso',
