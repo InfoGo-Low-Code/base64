@@ -8,7 +8,7 @@ import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorRespons
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { ConnectionPool, Request } from 'mssql'
-import { setRouteUsageAudisa } from '@/utils/audisa/routeUsage'
+import { setRouteUsageAudisa, setUserUsage } from '@/utils/audisa/routeUsage'
 
 const excelDataSchema = z.object({
   A: z.string(),
@@ -123,6 +123,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
               .replace(/ /g, '_')
               .replace(/[^\w_]/g, ''),
           ),
+          user: z.string(),
         }),
         response: {
           201: z.object({
@@ -135,9 +136,10 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
+      const { url, empresa, user } = request.body
+      
       setRouteUsageAudisa(true)
-
-      const { url, empresa } = request.body
+      setUserUsage(user)
 
       if (!existsSync('./uploads')) {
         mkdirSync('./uploads', { recursive: true })
@@ -345,6 +347,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       unlinkSync(filePath)
 
       setRouteUsageAudisa(false)
+      setUserUsage('')
 
       return reply.status(201).send({
         message: 'Registros inseridos com sucesso',
