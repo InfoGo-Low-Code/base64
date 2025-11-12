@@ -12,3 +12,7 @@ export function getUserUsage(): string[] {
 export function removeUserUsage(userUsage: string) {
   users = users.filter(user => user !== userUsage)
 }
+
+export function clearUserUsage() {
+  users = []
+}

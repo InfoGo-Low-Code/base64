@@ -19,6 +19,24 @@ const excelDataSchema = z.object({
   F: z.string(),
   G: z.string(),
   H: z.string(),
+  I: z.string(),
+  J: z.string(),
+  K: z.string(),
+  L: z.string(),
+  M: z.string(),
+  N: z.string(),
+  O: z.string(),
+  P: z.string(),
+  Q: z.string(),
+  R: z.string(),
+  S: z.string(),
+  T: z.string(),
+  U: z.string(),
+  V: z.string(),
+  W: z.string(),
+  X: z.string(),
+  Y: z.string(),
+  Z: z.string(),
 })
 
 type ExcelDataSchema = z.infer<typeof excelDataSchema>
@@ -174,7 +192,12 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
       const dataXlsx: ExcelDataSchema[] = utils.sheet_to_json(worksheet, {
-        header: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+        header: [
+          'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+          'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+          'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+          'Y', 'Z',
+        ],
         blankrows: true,
       })
 
@@ -214,6 +237,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
             credito: keys[normalizedRows.findIndex((c) => c === 'CREDITO')],
             saldo: keys[normalizedRows.findIndex((c) => c === 'SALDO')],
           }
+
+          console.warn(colMap)
         } else if (Object.values(register).length > 3) {
           const data: string | null = register[colMap.data] ?? null
           const lote: string | null = register[colMap.lote] ?? null
