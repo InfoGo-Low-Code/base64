@@ -136,6 +136,8 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
               SourceId NVARCHAR(400)
             );
 
+            USE dw_hmetrix;
+
             MERGE INTO dbo.eckermann_contas_a_receber AS target
             USING #TempInserts AS source
             ON target.id = source.id

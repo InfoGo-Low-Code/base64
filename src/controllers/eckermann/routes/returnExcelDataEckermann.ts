@@ -92,7 +92,6 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
           ).values()
         )
 
-        // Refatoração: Usamos um loop simples para processar, filtrar e coletar IDs duplicados
         semDuplicados.forEach(
           (line) => {
             const cliente =
@@ -114,7 +113,11 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
             const data_pagamento =
               typeof line.DATA === 'number'
                 ? excelDateToJSDate(line.DATA)
-                : line.DATA === 'PENDENTE' || line.DATA === '?' || !line.DATA || line.DATA.trim() === ''
+                : line.DATA === 'PENDENTE'
+                || line.DATA === '?'
+                || !line.DATA
+                || line.DATA.trim() === ''
+                || !line.DATA.includes('/')
                   ? undefined
                   : excelDateToJSDate(line.DATA)
 
@@ -125,6 +128,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
                 || line['DATA DO CRÉDITO'] === '?'
                 || !line['DATA DO CRÉDITO']
                 || line['DATA DO CRÉDITO'].trim() === ''
+                || !line['DATA DO CRÉDITO'].includes('/')
                   ? undefined
                   : excelDateToJSDate(line['DATA DO CRÉDITO'])
 
@@ -148,7 +152,7 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               descricao_honorario,
               data_vencimento,
               codigo_identificacao: line['CÓDIGO/NOME DE IDENTIFICAÇÃO'],
-              valor: line.VALOR,
+              valor: !line.VALOR ? 0 : line.VALOR,
               status:
                 line.PAGO === 'OK' || line.PAGO === 'PAGO'
                   ? 'PAGO'
@@ -168,12 +172,9 @@ export function returnExcelDataEckermann(app: FastifyZodTypedInstance) {
               recibo_parcela,
             }
 
-            // Lógica de detecção de duplicidade
             if (seenIds.has(registroFinal.id)) {
-              // ID já existe, registra como duplicado
               duplicateIdsArray.push(registroFinal.id)
             } else {
-              // ID é novo, adiciona ao Set de IDs vistos e à lista final
               seenIds.add(registroFinal.id)
               uniqueExcel.push(registroFinal as PlanilhaHoEckermannResponse)
             }
