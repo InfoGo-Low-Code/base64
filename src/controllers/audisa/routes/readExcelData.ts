@@ -188,151 +188,161 @@ export function readExcelData(app: FastifyZodTypedInstance) {
         return reply.internalServerError(e.message)
       }
 
-      const workbook = readFile(filePath)
-      const sheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[sheetName]
-      const dataXlsx: ExcelDataSchema[] = utils.sheet_to_json(worksheet, {
-        header: [
-          'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-          'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-          'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-          'Y', 'Z',
-        ],
-        blankrows: true,
-      })
-
-      const regexAccount = new RegExp(/^\d\.\d\.\d\.\d{2}\.\d{5}$/)
-
-      let contaAtual = ''
+      const db = await getDwAudisaConnection()
 
       const registers: ExcelDataTransformed[] = []
 
-      let colMap: Record<string, keyof ExcelDataSchema> = {} as any
-
-      dataXlsx.forEach((register, idx) => {
-        const accountValidation = regexAccount.test(register.A)
-
-        if (accountValidation) {
-          contaAtual = register.A
-        }
-
-        const normalizedRows = Object.values(register).map((value) => {
-          return normalize(value)
+      try {
+        const workbook = readFile(filePath)
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const dataXlsx: ExcelDataSchema[] = utils.sheet_to_json(worksheet, {
+          header: [
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+            'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+            'Y', 'Z',
+          ],
+          blankrows: true,
         })
 
-        if (
-          normalizedRows.includes('DEBITO') &&
-          normalizedRows.includes('CREDITO') &&
-          normalizedRows.includes('SALDO')
-        ) {
-          const keys = Object.keys(register) as (keyof ExcelDataSchema)[]
+        const regexAccount = new RegExp(/^\d\.\d\.\d\.\d{2}\.\d{5}$/)
 
-          colMap = {
-            data: keys[normalizedRows.findIndex((c) => c === 'DATA')],
-            lote: keys[normalizedRows.findIndex((c) => c === 'LOTE')],
-            lanc: keys[normalizedRows.findIndex((c) => c === 'LANC')],
-            cPartida: keys[normalizedRows.findIndex((c) => c === 'C/PARTIDA')],
-            historico: keys[normalizedRows.findIndex((c) => c === 'HISTORICO')],
-            debito: keys[normalizedRows.findIndex((c) => c === 'DEBITO')],
-            credito: keys[normalizedRows.findIndex((c) => c === 'CREDITO')],
-            saldo: keys[normalizedRows.findIndex((c) => c === 'SALDO')],
+        let contaAtual = ''
+
+        let colMap: Record<string, keyof ExcelDataSchema> = {} as any
+
+        dataXlsx.forEach((register, idx) => {
+          const accountValidation = regexAccount.test(register.A)
+
+          if (accountValidation) {
+            contaAtual = register.A
           }
 
-          console.warn(colMap)
-        } else if (Object.values(register).length > 3) {
-          const data: string | null = register[colMap.data] ?? null
-          const lote: string | null = register[colMap.lote] ?? null
-          const lanc: string | null = register[colMap.lanc] ?? null
-          const cPartida: string | null = register[colMap.cPartida] ?? null
-          const historico: string | null = register[colMap.historico] ?? null
-          const debito: string | null = register[colMap.debito] ?? null
-          const credito: string | null = register[colMap.credito] ?? null
-          const saldo: string | null = register[colMap.saldo] ?? null
-
-          let dataTransformed: string | null = null
-
-          if (data && data.includes('/')) {
-            const valoresData = data.split('/')
-
-            if (valoresData.length !== 3) {
-              dataTransformed = null
-            } else {
-              const [diaJs, mesJs, anoJs] = valoresData
-
-              dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
-            }
-          } else if (data && data.includes('-')) {
-            const valoresData = data.split('-')
-
-            if (valoresData.length !== 3) {
-              dataTransformed = null
-            } else {
-              const [diaJs, mesJs, anoJs] = valoresData
-
-              dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
-            }
-          } else if (typeof data === 'number') {
-            const [diaJs, mesJs, anoJs] = excelDateToJSDate(data)
-              .toLocaleDateString('pt-BR', { timeZone: 'UTC' })
-              .split('-')
-
-            dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
-          } else {
-            dataTransformed = null
-          }
-
-          let contaPartida: string | null = null
-          if (
-            cPartida &&
-            !regexAccount.test(cPartida) &&
-            normalize(cPartida) !== 'MULTIPLO'
-          ) {
-            contaPartida = null
-          } else {
-            contaPartida = cPartida
-          }
-
-          const parsedRegister = excelDataTransformed.parse({
-            contaAtual: String(contaAtual),
-            data: dataTransformed,
-            lote: String(lote),
-            lanc: String(lanc),
-            cPartida: String(contaPartida),
-            historico: String(historico),
-            debito: Number(debito),
-            credito: Number(credito),
-            saldo: Number(saldo),
+          const normalizedRows = Object.values(register).map((value) => {
+            return normalize(value)
           })
 
-          registers.push(parsedRegister)
+          if (
+            normalizedRows.includes('DEBITO') &&
+            normalizedRows.includes('CREDITO') &&
+            normalizedRows.includes('SALDO')
+          ) {
+            const keys = Object.keys(register) as (keyof ExcelDataSchema)[]
+
+            colMap = {
+              data: keys[normalizedRows.findIndex((c) => c === 'DATA')],
+              lote: keys[normalizedRows.findIndex((c) => c === 'LOTE')],
+              lanc: keys[normalizedRows.findIndex((c) => c === 'LANC')],
+              cPartida: keys[normalizedRows.findIndex((c) => c === 'C/PARTIDA')],
+              historico: keys[normalizedRows.findIndex((c) => c === 'HISTORICO')],
+              debito: keys[normalizedRows.findIndex((c) => c === 'DEBITO')],
+              credito: keys[normalizedRows.findIndex((c) => c === 'CREDITO')],
+              saldo: keys[normalizedRows.findIndex((c) => c === 'SALDO')],
+            }
+          } else if (Object.values(register).length > 3) {
+            const data: string | null = register[colMap.data] ?? null
+            const lote: string | null = register[colMap.lote] ?? null
+            const lanc: string | null = register[colMap.lanc] ?? null
+            const cPartida: string | null = register[colMap.cPartida] ?? null
+            const historico: string | null = register[colMap.historico] ?? null
+            const debito: string | null = register[colMap.debito] ?? null
+            const credito: string | null = register[colMap.credito] ?? null
+            const saldo: string | null = register[colMap.saldo] ?? null
+
+            let dataTransformed: string | null = null
+
+            // console.log(data, idx)
+
+            if (data && typeof data === 'string' && data.includes('/')) {
+              const valoresData = data.split('/')
+
+              if (valoresData.length !== 3) {
+                dataTransformed = null
+              } else {
+                const [diaJs, mesJs, anoJs] = valoresData
+
+                dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
+              }
+            } else if (data && typeof data === 'string' && data.includes('-')) {
+              const valoresData = data.split('-')
+
+              if (valoresData.length !== 3) {
+                dataTransformed = null
+              } else {
+                const [diaJs, mesJs, anoJs] = valoresData
+
+                dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
+              }
+            } else if (typeof data === 'number') {
+              const [diaJs, mesJs, anoJs] = excelDateToJSDate(data)
+                .toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+                .split('/')
+
+              dataTransformed = `${anoJs}-${mesJs}-${diaJs}`
+            } else {
+              dataTransformed = null
+            }
+
+            let contaPartida: string | null = null
+            if (
+              cPartida &&
+              !regexAccount.test(cPartida) &&
+              normalize(cPartida) !== 'MULTIPLO'
+            ) {
+              contaPartida = null
+            } else {
+              contaPartida = cPartida
+            }
+
+            const parsedRegister = excelDataTransformed.parse({
+              contaAtual: String(contaAtual),
+              data: dataTransformed,
+              lote: String(lote),
+              lanc: String(lanc),
+              cPartida: String(contaPartida),
+              historico: String(historico),
+              debito: Number(debito),
+              credito: Number(credito),
+              saldo: Number(saldo),
+            })
+
+            registers.push(parsedRegister)
+          }
+        })
+
+        const { recordset: existingTables } = await db.query(`
+          SELECT TABLE_NAME
+          FROM INFORMATION_SCHEMA.TABLES
+          WHERE TABLE_NAME LIKE 'razao_${empresa}'
+          ORDER BY TABLE_NAME DESC
+        `)
+
+        if (existingTables.length > 0) {
+          const comandos = toSQLInsert(registers, empresa)
+
+          const { inserted_data: registrosInseridos } = await runBatchInChunks(
+            comandos,
+            db,
+          )
+
+          console.log('aqui²')
+
+          removeUserUsage(user)
+
+          unlinkSync(filePath)
+
+          return reply.status(201).send({
+            message: 'Registros inseridos com sucesso',
+            registrosInseridos,
+          })
         }
-      })
-
-      const db = await getDwAudisaConnection()
-
-      const { recordset: existingTables } = await db.query(`
-        SELECT TABLE_NAME
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_NAME LIKE 'razao_${empresa}'
-        ORDER BY TABLE_NAME DESC
-      `)
-
-      if (existingTables.length > 0) {
-        const comandos = toSQLInsert(registers, empresa)
-
-        const { inserted_data: registrosInseridos } = await runBatchInChunks(
-          comandos,
-          db,
-        )
+      } catch (e: any) {
+        console.log(e)
 
         removeUserUsage(user)
 
-        unlinkSync(filePath)
-
-        return reply.status(201).send({
-          message: 'Registros inseridos com sucesso',
-          registrosInseridos,
-        })
+        return reply.internalServerError(e.message)
       }
 
       try {
