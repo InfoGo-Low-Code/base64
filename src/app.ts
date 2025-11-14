@@ -24,7 +24,9 @@ import { audisaRoutes } from './controllers/audisa/audisa.routes'
 import { fileExtensionConverter } from './controllers/fileExtensionConverter'
 import { covabraRoutes } from './controllers/covabra/covabra.routes'
 
-export const app = fastify().withTypeProvider<ZodTypeProvider>()
+export const app = fastify({
+  bodyLimit: 5 * 1024 * 1024
+}).withTypeProvider<ZodTypeProvider>()
 
 app.setErrorHandler(fastifyErrorHandler)
 
