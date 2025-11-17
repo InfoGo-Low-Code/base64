@@ -1,7 +1,7 @@
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { z } from 'zod'
 import pptxgen from 'pptxgenjs'
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, unlinkSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 
 export function exportPptx(app: FastifyZodTypedInstance) {
@@ -22,6 +22,8 @@ export function exportPptx(app: FastifyZodTypedInstance) {
     },
     async (request, reply) => {
       const { titulo, legendaPrimaria, metricaPrimaria, labels, legendaSecundaria, metricaSecundaria, tipoGrafico } = request.body
+
+      let filePath = ''
 
       try {
         if (!existsSync(`./uploads`)) {
@@ -209,7 +211,7 @@ export function exportPptx(app: FastifyZodTypedInstance) {
 
         }
 
-        const filePath = `./uploads/${titulo}-${tipoGrafico}.pptx`
+        filePath = `./uploads/${titulo}-${tipoGrafico}.pptx`
 
         await pptx.writeFile({ fileName: filePath })
 
@@ -224,9 +226,13 @@ export function exportPptx(app: FastifyZodTypedInstance) {
             "Content-Disposition",
             `attachment; filename="${titulo}-${tipoGrafico}.pptx"`
           )
-          .send(Buffer.from(pptxBuffer))
-      } catch (error) {
+          .send(pptxBuffer)
+      } catch (error: any) {
         console.warn(error)
+
+        return reply.internalServerError(error.message)
+      } finally {
+        unlinkSync(filePath)
       }
     },
   )
