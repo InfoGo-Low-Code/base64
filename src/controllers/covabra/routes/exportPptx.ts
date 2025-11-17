@@ -211,7 +211,7 @@ export function exportPptx(app: FastifyZodTypedInstance) {
 
         const filePath = `./uploads/${titulo}-${tipoGrafico}.pptx`
 
-        pptx.writeFile({ fileName: filePath })
+        await pptx.writeFile({ fileName: filePath })
 
         const pptxBuffer = await readFile(filePath)
 
@@ -224,7 +224,7 @@ export function exportPptx(app: FastifyZodTypedInstance) {
             "Content-Disposition",
             `attachment; filename="${titulo}-${tipoGrafico}.pptx"`
           )
-          .send(Buffer.from(pptxBuffer));
+          .send(Buffer.from(pptxBuffer))
       } catch (error) {
         console.warn(error)
       }
