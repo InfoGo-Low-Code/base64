@@ -7,6 +7,7 @@ import ConvertAPI from 'convertapi'
 import { env } from '@/env'
 import { lookup, extension } from 'mime-types'
 import { extname } from 'node:path'
+import { unlink, writeFile } from 'node:fs/promises'
 
 export function fileExtensionConverter(app: FastifyZodTypedInstance) {
   app.post(
@@ -14,9 +15,10 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
     {
       schema: {
         body: z.object({
-          url: z.string().url(),
+          url: z.string().url().optional(),
           filename: z.string(),
           extensionConvert: z.string(),
+          base64: z.string().optional(),
         }),
         response: {
           200: z.object({
@@ -31,7 +33,7 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { url, filename, extensionConvert } = request.body
+      const { url, filename, extensionConvert, base64: base64File } = request.body
 
       const filenameWithoutExt = filename.split('.')[0]
 
@@ -51,11 +53,23 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
 
       const convertapi = new ConvertAPI(CONVERTAPI_SECRET)
 
+      let filePath = `./uploads/${filename}`
+
+      if (base64File) {
+        const base64Data = base64File.includes(',')
+          ? base64File.split(',')[1]
+          : base64File
+
+        const buffer = Buffer.from(base64Data, 'base64')
+
+        await writeFile(filePath, buffer)
+      }
+
       try {
         const result = await convertapi.convert(
           extensionConvert,
           {
-            File: url,
+            File: base64File ? filePath : url,
           },
           extensionFile,
         )
@@ -92,6 +106,8 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
         } else {
           return reply.internalServerError(String(error))
         }
+      } finally {
+        unlink(filePath)
       }
     },
   )
