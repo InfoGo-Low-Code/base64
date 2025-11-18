@@ -346,16 +346,20 @@ export function exportPptx(app: FastifyZodTypedInstance) {
             }
           }))
 
-          const totalLinha = totalTable!.map((total) => ({
-            text: total,
-            options: {
-              bold: true,
-              fontSize: 5,
-              fontFace: "Montserrat",
-              color: "000000",
-              hAlign: (typeof total === "number" ? "right" : "left") as any
-            }
-          }))
+          let totalLinha: undefined | pptxgen.TableRow = undefined
+
+          if (totalTable && totalTable.length > 0) {
+            totalLinha = totalTable.map((total) => ({
+              text: String(total),
+              options: {
+                bold: true,
+                fontSize: 5,
+                fontFace: "Montserrat",
+                color: "000000",
+                hAlign: (typeof total === "number" ? "right" : "left") as any
+              }
+            }))
+          }
 
           const rows = metricasTable!.map(row =>
             Object.keys(row).map(key => {
