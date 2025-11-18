@@ -232,7 +232,7 @@ export function exportPptx(app: FastifyZodTypedInstance) {
             margin: 0,
           })
 
-          if (titulo === 'Estoque do fornecedor em quantidade' || titulo === 'Estoque do fornecedor em valor') {
+          if (titulo === 'Estoque do fornecedor em quantidade' || titulo === 'Estoque do fornecedor em valor' || titulo === 'Preço médio do fornecedor (R$)') {
             slide.addChart(
               tipoGrafico,
               [
@@ -248,7 +248,11 @@ export function exportPptx(app: FastifyZodTypedInstance) {
                 w: "90%",
                 h: "70%",
 
-                chartColors: titulo === 'Estoque do fornecedor em quantidade' ? ['ED0000'] : ['FFC000'],
+                chartColors: titulo === 'Estoque do fornecedor em quantidade'
+                  ? ['ED0000']
+                  : titulo === 'Estoque do fornecedor em valor'
+                    ? ['FFC000']
+                    : ['00B0F0'],
 
                 // Fontes
                 catAxisLabelFontSize: 10,
