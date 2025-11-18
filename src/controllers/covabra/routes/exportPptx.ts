@@ -2,7 +2,6 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { z } from 'zod'
 import pptxgen from 'pptxgenjs'
 import { existsSync, mkdirSync, unlinkSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
 
 export function exportPptx(app: FastifyZodTypedInstance) {
   app.post(
