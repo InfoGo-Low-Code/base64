@@ -16,99 +16,223 @@ export function exportPptx(app: FastifyZodTypedInstance) {
           legendaSecundaria: z.string().optional(),
           metricaSecundaria: z.array(z.number()).optional(),
           labels: z.array(z.string()).optional(),
-          tipoGrafico: z.enum(['line', 'bar', 'bar-line', 'table'])
+          tipoGrafico: z.enum(['line', 'bar', 'bar-line', 'table']),
+          metricasTable: z.array(
+              z.record(z.union([z.string(), z.number(), z.null()]))
+          ).optional(),
+          totalTable: z.array(z.union([z.string(), z.number()])).optional(),
+          usuario: z.string(),
+          marca: z.string(),
+          categorias: z.string(),
+          subcategorias: z.string(),
+          periodoInicial: z.string(),
+          periodoFinal: z.string(),
         }),
+        response: {
+          200: z.object({
+            base64: z.string(),
+          })
+        }
       },
     },
     async (request, reply) => {
-      const { titulo, legendaPrimaria, metricaPrimaria, labels, legendaSecundaria, metricaSecundaria, tipoGrafico } = request.body
+      const {
+        titulo,
+        legendaPrimaria,
+        metricaPrimaria,
+        labels,
+        legendaSecundaria,
+        metricaSecundaria,
+        tipoGrafico,
+        metricasTable,
+        usuario,
+        marca,
+        categorias,
+        subcategorias,
+        periodoInicial,
+        periodoFinal,
+        totalTable,
+      } = request.body
 
       let filePath = ''
 
+      const hoje = new Date()
+      const dataConsulta = `${hoje.getDate().toString().padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`
+
       try {
         if (!existsSync(`./uploads`)) {
-            mkdirSync(`./uploads`, { recursive: true })
-          }
+          mkdirSync(`./uploads`, { recursive: true })
+        }
 
         const pptx = new pptxgen()
 
-        const slide = pptx.addSlide()
-
         if (tipoGrafico === 'bar-line') {
+          const slide = pptx.addSlide()
+
+          slide.addImage({
+            path: './src/images/logoCovabra.png',
+            x: '90%',
+            y: 0.125,
+            w: 0.5,
+            h: 0.5,
+          })
+
+          slide.addText([
+            { text: `Data da Consulta: ${dataConsulta}\n`, options: { fontSize: 9, bold: true, color: "000000" } },
+            { text: `Usuário: ${usuario}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Marca: ${marca}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Categorias: ${categorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Subcategorias: ${subcategorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Período Inicial: ${periodoInicial}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Período Final: ${periodoFinal}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+          ], {
+            x: 0.5,
+            y: 0.25,
+            fontFace: "Montserrat",
+            h: "20%",
+            valign: "top",
+            lineSpacingMultiple: 1.25,
+            margin: 0,
+          })
+
+          // ======================
+          // 📊 GRÁFICO DE BARRAS
+          // ======================
           slide.addChart(
+            'bar',
             [
               {
-                type: 'bar',
-                data: [
-                  {
-                    labels,
-                    name: legendaPrimaria,
-                    values: metricaPrimaria,
-                  },
-                ],
-                options: {
-                  chartColors: ['44BE7B'],
-                  barGapWidthPct: 80,
-                  barOverlapPct: 0,
-                  showValue: true,
-                  dataLabelFormatCode: '#,##0.0', // sem decimais
-                  valLabelFormatCode: '#,##0.0',
-                },
-              },
-              {
-                type: 'line',
-                data: [
-                  {
-                    labels,
-                    name: legendaSecundaria,
-                    values: metricaSecundaria,
-                  },
-                ],
-                options: {
-                  chartColors: ['9DC3E6'],
-                  lineSmooth: true,
-                  lineSize: 2,
-                  lineDataSymbol: 'circle',
-                  lineDataSymbolSize: 8,
-                  showValue: true,
-                  dataLabelFormatCode: '#,##0.0', // ex: 93,4
-                  secondaryValAxis: true, // eixo direito
-                },
+                labels,
+                name: legendaPrimaria,
+                values: metricaPrimaria,
               },
             ],
-            [metricaPrimaria, metricaSecundaria],
-            { // 3º ARG: Opções Globais (Você já tem)
+            {
               x: 0.5,
-              y: 0.25,
-              w: '90%',
-              h: '90%',
+              y: 1.35,   // ⬅ legenda acima da linha
+              w: "90%",
+              h: "70%",
 
-              // ... Suas outras opções globais ...
-              catAxisLabelFontSize: 10,
-              catAxisLabelFontFace: 'Montserrat',
-              valAxisLabelFontFace: 'Montserrat',
-              legendFontFace: 'Montserrat',
-              titleFontFace: 'Montserrat',
-
-              showLegend: false,
-              legendPos: 't',
               title: titulo,
               showTitle: true,
-              titleFontSize: 14,
+              titleFontSize: 12,
               titleBold: true,
 
-              lineSmooth: true,
+              showLegend: true,
+              legendPos: 't',
 
+              titleFontFace: "Montserrat",
+              legendFontFace: "Montserrat",
+              legendFontSize: 10,
+
+              catAxisLabelFontFace: "Montserrat",
+              catAxisLabelFontSize: 7,
+
+              fontFace: "Montserrat",
+
+              dataLabelColor: '759A5D',
+
+              chartColors: ['44BE7B'],
               showValue: true,
               dataLabelFontFace: 'Montserrat',
               dataLabelFontSize: 10,
-              dataLabelColor: '000000',
-              dataLabelFormatCode: '#,##0',
+              dataLabelFormatCode: '#,##0.0',
+              dataLabelFontBold: true,
 
-              valGridLine: { style: 'solid' },
+              valAxisHidden: true,
+              valGridLine: { style: "none" },
             }
           )
+
+
+          // ======================
+          // 📈 GRÁFICO DE LINHA
+          // ======================
+          slide.addChart(
+            'line',
+            [
+              {
+                labels,
+                name: legendaSecundaria,
+                values: metricaSecundaria,   // 👈 linha horizontal
+              },
+            ],
+            {
+              x: 0.5,
+              y: 1.915,
+              w: "90%",
+              h: "60%",
+
+              showLegend: true,
+              legendPos: 't',
+
+              legendFontFace: "Montserrat",
+              legendFontSize: 10,
+
+              dataLabelPosition: 't',
+
+              plotArea: { fill: { color: "FFFFFF", transparency: 100 } },
+
+              valAxisMinVal: 0,
+              valAxisMaxVal: 99999999999999,
+
+              // esconde axis para não ficar estranho
+              // catAxisHidden: true,
+              valAxisHidden: true,
+
+              secondaryValAxis: true,
+
+              catAxisLabelFontFace: "Montserrat",
+              catAxisLabelFontSize: 7,
+
+              chartColors: ['9DC3E6'],
+              lineSmooth: false,  // garante que não faça ondulação
+              // lineSize: 2,
+              lineDataSymbol: 'circle',
+              lineDataSymbolSize: 7,
+
+              // Mostra os valores reais
+              showValue: true,
+              dataLabelFontFace: 'Montserrat',
+              dataLabelFontSize: 10,
+              dataLabelColor: '254A67',
+              dataLabelFontBold: true,
+
+              // 💡 Customização do label:
+              dataLabelFormatCode: '#,##0.0',
+              valGridLine: { style: "none" },
+            }
+          )
+
         } else if (tipoGrafico !== 'table') {
+          const slide = pptx.addSlide()
+
+          slide.addImage({
+            path: './src/images/logoCovabra.png',
+            x: '90%',
+            y: 0.125,
+            w: 0.5,
+            h: 0.5,
+          })
+
+          slide.addText([
+            { text: `Data da Consulta: ${dataConsulta}\n`, options: { fontSize: 9, bold: true, color: "000000" } },
+            { text: `Usuário: ${usuario}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Marca: ${marca}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Categorias: ${categorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Subcategorias: ${subcategorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Período Inicial: ${periodoInicial}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            { text: `Período Final: ${periodoFinal}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+          ], {
+            x: 0.5,
+            y: 0.25,
+            fontFace: "Montserrat",
+            h: "20%",
+            valign: "top",
+            lineSpacingMultiple: 1.25,
+            margin: 0,
+          })
+
           if (titulo === 'Estoque do fornecedor em quantidade' || titulo === 'Estoque do fornecedor em valor') {
             slide.addChart(
               tipoGrafico,
@@ -121,9 +245,9 @@ export function exportPptx(app: FastifyZodTypedInstance) {
               ],
               {
                 x: 0.5,
-                y: 0.25,
+                y: 1.35,
                 w: "90%",
-                h: "90%",
+                h: "70%",
 
                 chartColors: titulo === 'Estoque do fornecedor em quantidade' ? ['ED0000'] : ['FFC000'],
 
@@ -151,11 +275,9 @@ export function exportPptx(app: FastifyZodTypedInstance) {
                 dataLabelFormatCode: '#,##0',
 
                 // pequenas melhorias visuais
-                valGridLine: { style: "solid" },
+                valGridLine: { style: "none" },
               } 
             )
-          } else if (titulo === 'Estoque do fornecedor em valor') {
-
           } else {
             slide.addChart(
               tipoGrafico,
@@ -173,9 +295,9 @@ export function exportPptx(app: FastifyZodTypedInstance) {
               ],
               {
                 x: 0.5,
-                y: 0.25,
+                y: 1.35,
                 w: "90%",
-                h: "90%",
+                h: "70%",
 
                 chartColors: ["4CC884", "D68B58"],
 
@@ -203,30 +325,177 @@ export function exportPptx(app: FastifyZodTypedInstance) {
                 dataLabelFormatCode: '#,##0.0"%"',
 
                 // pequenas melhorias visuais
-                valGridLine: { style: "solid" },
+                valGridLine: { style: "none" },
               } 
             )
           }
         } else {
+          const header = Object.keys(metricasTable![0]).map((key) => ({
+            text: key,
+            options: {
+              bold: true,
+              fontSize: 5,
+              fontFace: "Montserrat",
+              color: "FFFFFF",
+              // fill como objeto (tipo + cor)
+              fill: { type: "solid", color: "2F75B5" } as any,
+              hAlign: "center" as any
+            }
+          }))
 
+          const totalLinha = totalTable!.map((total) => ({
+            text: total,
+            options: {
+              bold: true,
+              fontSize: 5,
+              fontFace: "Montserrat",
+              color: "000000",
+              hAlign: (typeof total === "number" ? "right" : "left") as any
+            }
+          }))
+
+          const rows = metricasTable!.map(row =>
+            Object.keys(row).map(key => {
+              const value = row[key]
+
+              let textValue = ""
+
+              if (value == null) {
+                textValue = "0"
+              } else if (typeof value === "number") {
+                if (key.includes("R$")) {
+                  textValue = new Intl.NumberFormat("pt-BR", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }).format(value)
+                } else {
+                  textValue = new Intl.NumberFormat("pt-BR", {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                  }).format(value)
+                }
+              } else {
+                textValue = value.toString()
+              }
+
+              return {
+                text: textValue,
+                options: {
+                  fontFace: "Montserrat",
+                  fontSize: 5,
+                  color: "000000",
+                  hAlign: (typeof value === "number" ? "right" : "left") as any
+                }
+              }
+            })
+          )
+
+          // ==============================
+          //     PAGINAÇÃO DAS TABELAS
+          // ==============================
+          function chunkRows(rows: any[]) {
+            const chunks: any[] = []
+
+            const firstPageSize = 10
+            const otherPagesSize = 15
+
+            chunks.push(rows.slice(0, firstPageSize))
+
+            let start = firstPageSize
+            while (start < rows.length) {
+              chunks.push(rows.slice(start, start + otherPagesSize))
+              start += otherPagesSize
+            }
+
+            return chunks
+          }
+
+          const pages = chunkRows(rows)
+
+          pages.forEach((pageRows, pageIndex) => {
+            const pageSlide = pptx.addSlide()
+
+            // LOGO
+            pageSlide.addImage({
+              path: './src/images/logoCovabra.png',
+              x: '90%',
+              y: 0.125,
+              w: 0.5,
+              h: 0.5,
+            })
+
+            const isFirstPage = pageIndex === 0
+
+            // HEADER SOMENTE NA PRIMEIRA PÁGINA
+            if (isFirstPage) {
+              pageSlide.addText([
+                { text: `Data da Consulta: ${dataConsulta}\n`, options: { fontSize: 9, bold: true, color: "000000" } },
+                { text: `Usuário: ${usuario}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+                { text: `Marca: ${marca}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+                { text: `Categorias: ${categorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+                { text: `Subcategorias: ${subcategorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+                { text: `Período Inicial: ${periodoInicial}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+                { text: `Período Final: ${periodoFinal}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+              ], {
+                x: 0.5,
+                y: 0.25,
+                fontFace: "Montserrat",
+                h: "20%",
+                valign: "top",
+                lineSpacingMultiple: 1.25,
+                margin: 0,
+              })
+            }
+
+            // ============================
+            //        TABELA DINÂMICA
+            // ============================
+
+            let tableData = [header, ...pageRows]
+
+            if (pageIndex === pages.length - 1) {
+              tableData = [header, ...pageRows, totalLinha]
+            }
+
+            const totalLinhas = pageRows.length
+            const alturaCalculada = totalLinhas * 10 // 10% por linha
+
+            // LIMITES DE ALTURA POR PÁGINA
+            const HEADER_HEIGHT = 25   // % ocupado pelo header da página 1
+            const FOOTER_MARGIN = 5    // margem de segurança
+
+            let alturaMaxima
+            let yPos: pptxgen.Coord = "15%"
+
+            if (isFirstPage) {
+              alturaMaxima = 100 - HEADER_HEIGHT - FOOTER_MARGIN
+              yPos = `${HEADER_HEIGHT}%`
+            } else {
+              alturaMaxima = 100 - 15 - FOOTER_MARGIN
+            }
+
+            // APLICA O MÍNIMO ENTRE OS DOIS (GARANTE QUE NÃO VAZE DO SLIDE)
+            const alturaFinal: pptxgen.Coord = `${Math.min(alturaCalculada, alturaMaxima)}%`
+
+            pageSlide.addTable(tableData, {
+              x: 0.5,
+              y: yPos,
+              w: "90%",
+              h: alturaFinal,
+              border: { color: "D0D0D0", pt: 1 },
+              autoPage: false,
+            })
+          })
         }
 
         filePath = `./uploads/${titulo}-${tipoGrafico}.pptx`
 
         await pptx.writeFile({ fileName: filePath })
 
-        const pptxBuffer = await readFile(filePath)
+        const base64 = await pptx.write({ outputType: 'base64' })
+        const base64String = base64.toString()
 
-        reply
-          .header(
-            "Content-Type",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-          )
-          .header(
-            "Content-Disposition",
-            `attachment; filename="${titulo}-${tipoGrafico}.pptx"`
-          )
-          .send(pptxBuffer)
+        reply.send({ base64: base64String })
       } catch (error: any) {
         console.warn(error)
 
