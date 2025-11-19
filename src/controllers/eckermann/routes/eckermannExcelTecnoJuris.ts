@@ -6,6 +6,7 @@ import { z } from 'zod'
 export type TecnoJuris = {
   data: string
   cliente: string
+  carteira: string
   polo: string
   tipo: string
   descricao: string
@@ -41,7 +42,18 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
           SELECT
             data AS 'DATA',
             cliente AS 'CLIENTE',
-            '' AS 'CARTEIRA',
+            CASE
+              WHEN cliente LIKE '%(%)%' 
+                AND RIGHT(LTRIM(RTRIM(cliente)), 1) = ')'
+              THEN
+              SUBSTRING(
+                cliente,
+                LEN(cliente) - CHARINDEX('(', REVERSE(cliente)) + 2,
+                LEN(cliente) - (LEN(cliente) - CHARINDEX('(', REVERSE(cliente)) + 2)
+              )
+              ELSE
+              'NÃO INFORMADO'
+            END AS 'CARTEIRA',
             poloCliente AS 'PÓLO',
             tipo AS 'TIPO DE DESPESA',
             descricao AS 'DESCRIÇÃO DA DESPESA',
@@ -58,7 +70,16 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
             usuario AS 'ADICIONADO POR',
             validacao AS 'OBS',
             unidade AS 'UNIDADE',
-            '' AS 'DIA DO PAGAMENTO'
+            CASE 
+              WHEN DATENAME(WEEKDAY, DATEADD(DAY, 1, data)) IN ('Saturday', 'domingo', 'Saturday', 'Sábado') THEN 
+                  DATEADD(DAY, 3, data)
+
+              WHEN DATENAME(WEEKDAY, DATEADD(DAY, 1, data)) IN ('Sunday', 'domingo', 'Sunday', 'Domingo') THEN 
+                  DATEADD(DAY, 2, data)
+
+              ELSE 
+                  DATEADD(DAY, 1, data)  -- Caso normal
+          END AS 'DIA DO PAGAMENTO'
           FROM dbo.eckermann_tecnojuris
           WHERE id IN ('${idsFormatados}')
         `)
