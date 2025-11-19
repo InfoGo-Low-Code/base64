@@ -15,5 +15,5 @@ export function camposConcat(base: any, recibo_parcela: string): string {
   const stringConcat = valores.join('&')
 
   const hash = stringConcat
-  return hash
+  return hash.replace(/;/g, "")
 }
