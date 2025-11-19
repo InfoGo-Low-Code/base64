@@ -10,6 +10,9 @@ import { downloadMultiplosArquivos } from './routes/downloadMultiplosArquivos'
 import { eckermannTecnoJuris } from './routes/eckermannTecnoJuris'
 import { eckermannExcelTecnoJuris } from './routes/eckermannExcelTecnoJuris'
 import { eckermannCnab } from './routes/eckermannCnab'
+import { arquivosTecnojuris } from './routes/arquivosTecnoJuris'
+import { boletosTecnoJuris } from './routes/boletosTecnoJuris'
+import { returnExcelDataEckermannMultiple } from './routes/returnExcelDataEckermannMultiple'
 
 export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(returnExcelDataEckermann)
@@ -23,4 +26,7 @@ export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(eckermannTecnoJuris)
   app.register(eckermannExcelTecnoJuris)
   app.register(eckermannCnab)
+  app.register(arquivosTecnojuris)
+  app.register(boletosTecnoJuris)
+  app.register(returnExcelDataEckermannMultiple)
 }
