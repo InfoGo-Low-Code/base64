@@ -140,7 +140,9 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
 
             MERGE INTO dbo.eckermann_contas_a_receber AS target
             USING #TempInserts AS source
-            ON target.id = source.id
+            ON target.codigo_identificacao = source.codigo_identificacao
+              AND target.valor = source.valor
+              AND target.recibo_parcela = source.recibo_parcela
 
             WHEN MATCHED THEN
               UPDATE SET
