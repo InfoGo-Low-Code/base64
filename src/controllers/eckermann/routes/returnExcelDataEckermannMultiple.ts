@@ -383,7 +383,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
               })
             }
           } else {
-            valor = Number(line.VALOR.toString().replace(/\./g, '').replace(',', '.'))
+            valor = Number(line.VALOR.toFixed(2))
           }
 
 

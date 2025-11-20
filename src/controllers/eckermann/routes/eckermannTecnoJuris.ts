@@ -4,7 +4,7 @@ import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorRespons
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { randomUUID } from 'node:crypto'
 
-type JwtEckermannSchema = {
+export type JwtEckermannSchema = {
   usuario: {
     id: number
     email: string
