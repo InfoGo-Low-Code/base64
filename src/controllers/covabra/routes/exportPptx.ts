@@ -333,172 +333,12 @@ export function exportPptx(app: FastifyZodTypedInstance) {
             )
           }
         } else {
-          // const header = Object.keys(metricasTable![0]).map((key) => ({
-          //   text: key,
-          //   options: {
-          //     bold: true,
-          //     fontSize: 5,
-          //     fontFace: "Montserrat",
-          //     color: "FFFFFF",
-          //     // fill como objeto (tipo + cor)
-          //     fill: { type: "solid", color: "2F75B5" } as any,
-          //     hAlign: "center" as any
-          //   }
-          // }))
-
-          // let totalLinha: undefined | pptxgen.TableRow = undefined
-
-          // if (totalTable && totalTable.length > 0) {
-          //   totalLinha = totalTable.map((total) => ({
-          //     text: String(total),
-          //     options: {
-          //       bold: true,
-          //       fontSize: 5,
-          //       fontFace: "Montserrat",
-          //       color: "000000",
-          //       hAlign: (typeof total === "number" ? "right" : "left") as any
-          //     }
-          //   }))
-          // }
-
-          // const rows = metricasTable!.map(row =>
-          //   Object.keys(row).map(key => {
-          //     const value = row[key]
-
-          //     let textValue = ""
-
-          //     if (value == null) {
-          //       textValue = "0"
-          //     } else if (typeof value === "number") {
-          //       if (key.includes("R$")) {
-          //         textValue = new Intl.NumberFormat("pt-BR", {
-          //           minimumFractionDigits: 0,
-          //           maximumFractionDigits: 0
-          //         }).format(value)
-          //       } else {
-          //         textValue = new Intl.NumberFormat("pt-BR", {
-          //           minimumFractionDigits: 1,
-          //           maximumFractionDigits: 1
-          //         }).format(value)
-          //       }
-          //     } else {
-          //       textValue = value.toString()
-          //     }
-
-          //     return {
-          //       text: textValue,
-          //       options: {
-          //         fontFace: "Montserrat",
-          //         fontSize: 5,
-          //         color: "000000",
-          //         hAlign: (typeof value === "number" ? "right" : "left") as any
-          //       }
-          //     }
-          //   })
-          // )
-
-          // // ==============================
-          // //     PAGINAÇÃO DAS TABELAS
-          // // ==============================
-          // function chunkRows(rows: any[]) {
-          //   const chunks: any[] = []
-
-          //   const firstPageSize = 10
-          //   const otherPagesSize = 15
-
-          //   chunks.push(rows.slice(0, firstPageSize))
-
-          //   let start = firstPageSize
-          //   while (start < rows.length) {
-          //     chunks.push(rows.slice(start, start + otherPagesSize))
-          //     start += otherPagesSize
-          //   }
-
-          //   return chunks
-          // }
-
-          // const pages = chunkRows(rows)
-
-          // pages.forEach((pageRows, pageIndex) => {
-          //   const pageSlide = pptx.addSlide()
-
-          //   // LOGO
-          //   pageSlide.addImage({
-          //     path: './src/images/logoCovabra.png',
-          //     x: '90%',
-          //     y: 0.125,
-          //     w: 0.5,
-          //     h: 0.5,
-          //   })
-
-          //   const isFirstPage = pageIndex === 0
-
-          //   // HEADER SOMENTE NA PRIMEIRA PÁGINA
-          //   if (isFirstPage) {
-          //     pageSlide.addText([
-          //       { text: `Data da Consulta: ${dataConsulta}\n`, options: { fontSize: 9, bold: true, color: "000000" } },
-          //       { text: `Usuário: ${usuario}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-          //       { text: `Marca: ${marca}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-          //       { text: `Categorias: ${categorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-          //       { text: `Subcategorias: ${subcategorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-          //       { text: `Período Inicial: ${periodoInicial}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-          //       { text: `Período Final: ${periodoFinal}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-          //     ], {
-          //       x: 0.5,
-          //       y: 0.25,
-          //       fontFace: "Montserrat",
-          //       h: "20%",
-          //       valign: "top",
-          //       lineSpacingMultiple: 1.25,
-          //       margin: 0,
-          //     })
-          //   }
-
-          //   // ============================
-          //   //        TABELA DINÂMICA
-          //   // ============================
-
-          //   let tableData = [header, ...pageRows]
-
-          //   if (pageIndex === pages.length - 1) {
-          //     tableData = [header, ...pageRows, totalLinha]
-          //   }
-
-          //   const totalLinhas = pageRows.length
-          //   const alturaCalculada = totalLinhas * 10 // 10% por linha
-
-          //   // LIMITES DE ALTURA POR PÁGINA
-          //   const HEADER_HEIGHT = 25   // % ocupado pelo header da página 1
-          //   const FOOTER_MARGIN = 5    // margem de segurança
-
-          //   let alturaMaxima
-          //   let yPos: pptxgen.Coord = "15%"
-
-          //   if (isFirstPage) {
-          //     alturaMaxima = 100 - HEADER_HEIGHT - FOOTER_MARGIN
-          //     yPos = `${HEADER_HEIGHT}%`
-          //   } else {
-          //     alturaMaxima = 100 - 15 - FOOTER_MARGIN
-          //   }
-
-          //   // APLICA O MÍNIMO ENTRE OS DOIS (GARANTE QUE NÃO VAZE DO SLIDE)
-          //   const alturaFinal: pptxgen.Coord = `${Math.min(alturaCalculada, alturaMaxima)}%`
-
-          //   pageSlide.addTable(tableData, {
-          //     x: 0.5,
-          //     y: yPos,
-          //     w: "90%",
-          //     h: alturaFinal,
-          //     border: { color: "D0D0D0", pt: 1 },
-          //     autoPage: false,
-          //   })
-          // })
           // ========================
-// ÍCONES (paths locais)
-// ========================
+          // ÍCONES (paths locais)
+          // ========================
 
-// Detecta coluna STATUS
-// Detecta coluna STATUS
+          // Detecta coluna STATUS
+          // Detecta coluna STATUS
           const isStatusColumn = (key: string) =>
             key.toUpperCase().includes("STATUS")
 
@@ -508,13 +348,13 @@ export function exportPptx(app: FastifyZodTypedInstance) {
             if (isStatusColumn(key)) {
               let statusText = ""
 
-              if (typeof value === "string") {
-                const val = value.toLowerCase()
-                statusText = val.includes("positivo") ? "POSITIVO" : "NEGATIVO"
-              } else {
-                const num = Number(value)
-                statusText = num === 0 ? "NEGATIVO" : "POSITIVO"
-              }
+              // if (typeof value === "string") {
+              //   const val = value.toLowerCase()
+              //   statusText = val.includes("positivo") ? "POSITIVO" : "NEGATIVO"
+              // } else {
+              //   const num = Number(value)
+              //   statusText = num === 0 ? "NEGATIVO" : "POSITIVO"
+              // }
 
               return {
                 text: statusText,
@@ -581,7 +421,7 @@ export function exportPptx(app: FastifyZodTypedInstance) {
           let totalLinha: pptxgen.TableRow | undefined = undefined
 
           if (totalTable && totalTable.length > 0) {
-            const keys = Object.keys(metricasTable![0]);
+            const keys = Object.keys(metricasTable![0])
 
             totalLinha = keys.map((key, i) =>
               makeCell(key, totalTable[i], true)   // <<< isTotalRow = true
@@ -677,16 +517,114 @@ export function exportPptx(app: FastifyZodTypedInstance) {
               alturaMaxima = 100 - 15 - FOOTER_MARGIN
             }
 
+            const TABLE_Y = yPos
+
             const alturaFinal: pptxgen.Coord = `${Math.min(alturaCalculada, alturaMaxima)}%`
 
             pageSlide.addTable(tableData, {
               x: 0.5,
-              y: yPos,
+              y: TABLE_Y,
               w: "90%",
               h: alturaFinal,
               border: { color: "D0D0D0", pt: 1 },
               autoPage: false,
             })
+
+            // ======================================================
+            // PASSO 1 — ADICIONAR ICONES EM CIMA DA COLUNA STATUS
+            // ======================================================
+
+            // 1. Descobre qual índice da coluna é STATUS
+            const columns = Object.keys(metricasTable![0])
+            const statusColIndex = columns.findIndex((key) =>
+              key.toUpperCase().includes("STATUS")
+            )
+
+            if (statusColIndex >= 0) {
+              const POS_IMG_PATH = "./src/images/icon_positivo.png"
+              const NEG_IMG_PATH = "./src/images/icon_negativo.png"
+
+              // ======================================================
+              // POSICIONAMENTO PRECISO DOS ÍCONES
+              // ======================================================
+
+              // Medidas reais da tabela (em inches)
+              const TABLE_X_IN = 0.5           // você usou x:0.5 → 0.5" reais
+              const TABLE_W_IN = 9.0           // w:"90%" → ~9"
+              const TABLE_Y_IN =
+                typeof TABLE_Y === "string" && TABLE_Y.includes("%")
+                  ? (parseFloat(TABLE_Y) / 100) * 5.625
+                  : Number(TABLE_Y)
+
+              const TABLE_H_IN =
+                (typeof alturaFinal === "string" && alturaFinal.includes("%"))
+                  ? (parseFloat(alturaFinal) / 100) * 5.625
+                  : Number(alturaFinal)
+
+              // número total de linhas na tabela renderizada
+              const totalRows = tableData.length
+
+              // altura real de cada linha
+              const ROW_H_IN = TABLE_H_IN / totalRows
+
+              // largura/altura real das imagens
+              const IMG_W_IN = 0.10
+              const IMG_H_IN = 0.10
+
+              // largura da coluna do STATUS
+              const colCount = columns.length
+              const colWidth = TABLE_W_IN / colCount
+
+              // loop das linhas (r = 1 ignora header)
+              for (let r = 1; r < tableData.length; r++) {
+                const rowIsTotal =
+                  pageIndex === pages.length - 1 &&
+                  totalLinha &&
+                  r === tableData.length - 1
+
+                let cellValue: string | null = null
+
+                if (r - 1 < pageRows.length) {
+                  // Linha normal
+                  const celula = pageRows[r - 1][statusColIndex]
+                  cellValue = celula?.text ?? null
+                } else if (rowIsTotal) {
+                  // Linha TOTAL (vem em outro formato)
+                  cellValue = String(totalTable?.[statusColIndex]) ?? null
+                }
+
+                const positive =
+                  typeof cellValue === "string"
+                    ? cellValue.toLowerCase().includes("positivo")
+                    : Number(cellValue) !== 0
+
+                const imgPath = positive ? POS_IMG_PATH : NEG_IMG_PATH
+
+                const PADDING_LEFT_AND_TOP = 0.05
+
+                // --- X perfeito ---
+                const xPos =
+                  TABLE_X_IN +
+                  statusColIndex * colWidth +
+                  PADDING_LEFT_AND_TOP
+                  // (colWidth - IMG_W_IN) / 2
+
+                // --- Y perfeito ---
+                const yPos =
+                  TABLE_Y_IN +                     // onde a tabela começa
+                  r * ROW_H_IN +                   // pula r linhas
+                  PADDING_LEFT_AND_TOP          // só caso queira alinhado tipo texto (à esquerda)
+                  // (ROW_H_IN - IMG_H_IN) / 2       // centraliza dentro da linha
+
+                pageSlide.addImage({
+                  path: imgPath,
+                  x: xPos,
+                  y: yPos,
+                  w: IMG_W_IN,
+                  h: IMG_H_IN,
+                })
+              }
+            }
           })
         }
 
