@@ -144,6 +144,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
               .replace(/[^\w_]/g, ''),
           ),
           user: z.string(),
+          data_hora: z.string(),
         }),
         response: {
           201: z.object({
@@ -156,17 +157,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const str = new Date().toLocaleString("pt-BR", {
-        timeZone: "America/Sao_Paulo"
-      })
-
-      const [data, horario] = str.split(', ')
-
-      const [dia, mes, ano] = data.split('/')
-
-      const dataHoraAtualFormatada = `${ano}-${mes}-${dia} ${horario}`
-
-      const { url, empresa, user } = request.body
+      const { url, empresa, user, data_hora } = request.body
       
       removeUserUsage(user)
       setUserUsage(user)
@@ -317,7 +308,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
               debito: Number(debito),
               credito: Number(credito),
               saldo: Number(saldo),
-              dataHoraAtualFormatada,
+              dataHoraAtualFormatada: data_hora,
             })
 
             registers.push(parsedRegister)
