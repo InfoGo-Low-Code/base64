@@ -53,6 +53,7 @@ const excelDataTransformed = z.object({
   debito: z.number().transform(roundToTwo),
   credito: z.number().transform(roundToTwo),
   saldo: z.number().transform(roundToTwo),
+  dataHoraAtualFormatada: z.string(),
 })
 
 type ExcelDataTransformed = z.infer<typeof excelDataTransformed>
@@ -78,8 +79,9 @@ function toSQLInsert(array: ExcelDataTransformed[], empresa: string): string[] {
     const ID = idx + 1
 
     return `INSERT INTO razao_${empresa} 
-      (conta, conta_partida, data, numero, historico, cta_c_part, debito, credito, saldo, ID, valor)
+      (data_hora, conta, conta_partida, data, numero, historico, cta_c_part, debito, credito, saldo, ID, valor)
       VALUES (
+        ${formatValue(item.dataHoraAtualFormatada)},
         ${formatValue(item.contaAtual)},
         ${formatValue(item.cPartida)},
         ${formatValue(item.data)},
@@ -154,6 +156,16 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
+      const str = new Date().toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo"
+      })
+
+      const [data, horario] = str.split(', ')
+
+      const [dia, mes, ano] = data.split('/')
+
+      const dataHoraAtualFormatada = `${ano}-${mes}-${dia} ${horario}`
+
       const { url, empresa, user } = request.body
       
       removeUserUsage(user)
@@ -305,6 +317,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
               debito: Number(debito),
               credito: Number(credito),
               saldo: Number(saldo),
+              dataHoraAtualFormatada,
             })
 
             registers.push(parsedRegister)
@@ -326,8 +339,6 @@ export function readExcelData(app: FastifyZodTypedInstance) {
             db,
           )
 
-          console.log('aqui²')
-
           removeUserUsage(user)
 
           unlinkSync(filePath)
@@ -348,6 +359,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       try {
         await db.query(`
           CREATE TABLE razao_${empresa} (
+            data_hora DATETIME,
             conta NVARCHAR(255),
             conta_partida NVARCHAR(255),
             data DATETIME,
