@@ -228,8 +228,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
           if (
             normalizedRows.includes('DEBITO') &&
-            normalizedRows.includes('CREDITO') &&
-            normalizedRows.includes('SALDO')
+            normalizedRows.includes('CREDITO')
           ) {
             const keys = Object.keys(register) as (keyof ExcelDataSchema)[]
 
@@ -243,7 +242,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
               credito: keys[normalizedRows.findIndex((c) => c === 'CREDITO')],
               saldo: keys[normalizedRows.findIndex((c) => c === 'SALDO')],
             }
-          } else if (Object.values(register).length > 3) {
+          } else if (Object.values(register).length > 2) {
             const data: string | null = register[colMap.data] ?? null
             const lote: string | null = register[colMap.lote] ?? null
             const lanc: string | null = register[colMap.lanc] ?? null
