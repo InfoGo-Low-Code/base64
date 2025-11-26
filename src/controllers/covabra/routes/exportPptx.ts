@@ -641,7 +641,7 @@ export function exportPptx(app: FastifyZodTypedInstance) {
 
         return reply.internalServerError(error.message)
       } finally {
-        // unlinkSync(filePath)
+        unlinkSync(filePath)
       }
     },
   )
