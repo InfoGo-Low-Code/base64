@@ -60,13 +60,13 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
             processoId AS 'PROCESSO',
             partesContrarias AS 'NOME DE IDENTIFICAÇÃO',
             pasta AS 'COD. CLIENTE',
-            '' AS 'BANCO',
+            contaDebito AS 'BANCO',
             valor AS 'VALOR',
             CASE
               WHEN efetivado = 1 THEN 'PAGO'
               ELSE 'PENDENTE'
             END AS 'PAGO',
-            '' AS 'BANCO PAGAMENTO',
+            contaCredito AS 'BANCO PAGAMENTO',
             usuario AS 'ADICIONADO POR',
             validacao AS 'OBS',
             unidade AS 'UNIDADE',

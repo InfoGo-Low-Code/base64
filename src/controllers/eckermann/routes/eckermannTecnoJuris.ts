@@ -13,6 +13,8 @@ export type JwtEckermannSchema = {
 }
 
 type Node = {
+  contaCredito: string
+  contaDebito: string
   pessoaId: string
   descricao: string
   createdAt: string
@@ -85,6 +87,8 @@ const dataReturn = z.object({
   poloCliente: z.string(),
   usuario: z.string(),
   validacao: z.string(),
+  contaCredito: z.string(),
+  contaDebito: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -150,6 +154,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
                     startCursor
                   }
                   nodes {
+                    contaCredito
+                    contaDebito
                     pessoaId
                     descricao
                     createdAt
@@ -413,6 +419,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               processoId: node.processoId ?? 'NÃO INFORMADO',
               usuario: node.usuario.nome,
               validacao,
+              contaCredito: node.contaCredito,
+              contaDebito: node.contaDebito,
             }
           })
 
