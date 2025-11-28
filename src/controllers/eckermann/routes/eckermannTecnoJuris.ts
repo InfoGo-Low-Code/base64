@@ -91,8 +91,7 @@ const dataReturn = z.object({
   poloCliente: z.string(),
   usuario: z.string(),
   validacao: z.string(),
-  contaCredito: z.string(),
-  contaDebito: z.string(),
+  banco: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -423,6 +422,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               processoId: node.processoId ?? 'NÃO INFORMADO',
               usuario: node.usuario.nome,
               validacao,
+              banco: `${node.contaCredito.valor1}${node.contaDebito && ` - ${node.contaDebito.valor1}`}`,
               contaCredito: node.contaCredito.valor1,
               contaDebito: node.contaDebito ? node.contaDebito.valor1 : 'NÃO INFORMADO',
             }
