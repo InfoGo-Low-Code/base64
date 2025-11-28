@@ -356,13 +356,12 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
         const pastaMap = new Map<
           string,
-          { pasta: string; partesContrarias: string[]; poloCliente: string[] }
+          { pasta: string; partesContrarias: string[] }
         >()
         pastasProcessos.forEach((p) => {
           pastaMap.set(p.id, {
             pasta: p.pasta,
             partesContrarias: p.partesContrarias,
-            poloCliente: p.poloCliente,
           })
         })
 
@@ -383,8 +382,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
             const unidade = node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO'
 
-            const poloCliente =
-              pastaData?.poloCliente.join(', ') ?? 'NÃO INFORMADO'
+            const poloCliente = node.natureza?.valor1.includes('ATIVAS') ? 'Autor' : 'Réu'
 
             let validacao = 'OK'
 
