@@ -17,6 +17,7 @@ export const planilhaHoEckermannResponse = z.object({
   socio: z.string(),
   empresa: z.string(),
   valor_validado: z.number(),
+  // smart_key: z.string(),
 })
 
 export type PlanilhaHoEckermannResponse = z.infer<

@@ -15,6 +15,7 @@ import { PlanilhaHoEckermannBody } from '@/schemas/eckermann/planilhaHoEckermann
 import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { basename } from 'node:path'
 import { camposConcat } from '@/utils/camposConcat'
+// import { createSmartKey } from '@/utils/eckermann/createSmartKey'
 
 export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
   app.post(
@@ -262,9 +263,9 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           campoAtual = 'N. DO RECIBO/PARCELA'
           const recibo_parcela =
             !line['N. DO RECIBO/PARCELA']
-            || line['N. DO RECIBO/PARCELA'].trim() === ''
+            || String(line['N. DO RECIBO/PARCELA']).trim() === ''
               ? '?'
-              : String(line['N. DO RECIBO/PARCELA'].trim())
+              : String(line['N. DO RECIBO/PARCELA']).trim()
 
 
 
@@ -435,6 +436,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           const registroFinal = {
             ...baseObject,
             id: camposConcat(baseObject, recibo_parcela),
+            // smart_key: createSmartKey(baseObject, recibo_parcela),
             recibo_parcela,
           }
 
