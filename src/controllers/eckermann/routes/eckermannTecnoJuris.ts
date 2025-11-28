@@ -13,8 +13,12 @@ export type JwtEckermannSchema = {
 }
 
 type Node = {
-  contaCredito: string
-  contaDebito: string
+  contaCredito: {
+    valor1: string
+  }
+  contaDebito: {
+    valor1: string
+  } | null
   pessoaId: string
   descricao: string
   createdAt: string
@@ -154,8 +158,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
                     startCursor
                   }
                   nodes {
-                    contaCredito
-                    contaDebito
+                    contaCredito { valor1 }
+                    contaDebito { valor1 }
                     pessoaId
                     descricao
                     createdAt
@@ -419,8 +423,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               processoId: node.processoId ?? 'NÃO INFORMADO',
               usuario: node.usuario.nome,
               validacao,
-              contaCredito: node.contaCredito,
-              contaDebito: node.contaDebito,
+              contaCredito: node.contaCredito.valor1,
+              contaDebito: node.contaDebito ? node.contaDebito.valor1 : 'NÃO INFORMADO',
             }
           })
 
