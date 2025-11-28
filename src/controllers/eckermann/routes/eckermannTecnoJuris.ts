@@ -420,9 +420,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               processoId: node.processoId ?? 'NÃO INFORMADO',
               usuario: node.usuario.nome,
               validacao,
-              banco: `${node.contaCredito.valor1}${node.contaDebito && ` - ${node.contaDebito.valor1}`}`,
-              contaCredito: node.contaCredito.valor1,
-              contaDebito: node.contaDebito ? node.contaDebito.valor1 : 'NÃO INFORMADO',
+              banco: `${node.contaCredito && node.contaCredito.valor1}${node.contaDebito && ` - ${node.contaDebito.valor1}`}`,
             }
           })
 
