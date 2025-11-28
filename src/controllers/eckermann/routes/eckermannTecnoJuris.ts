@@ -141,6 +141,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
         console.log(jwt_token)
 
+        const dataInicial = new Date()
+
         let beforeCursor: string | undefined
         let hasPreviousPage = true
         const allNodes: Node[] = []
@@ -185,7 +187,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           const connection = data.data.valoresConnection
           const nodes = connection.nodes
 
-          const dataMinima = new Date('2025-10-01')
+          const dataMinima = new Date('2025-11-01')
 
           // filtra apenas registros de 2025
           const registrosValidos = nodes.filter((n) => {
@@ -218,6 +220,10 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           // pequena pausa para não floodar a API
           await new Promise((r) => setTimeout(r, 200))
         }
+
+        const dataTodos = new Date()
+
+        console.log(`Tempo para pegar tudo: ${dataTodos.getTime() - dataInicial.getTime()}ms`)
 
         const pessoaIds = Array.from(
           new Set(allNodes.map((n) => n.pessoaId).filter(Boolean)),
@@ -253,6 +259,10 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           pessoasNomesIds.push(...nodes)
         })
 
+        const dataPessoas = new Date()
+
+        console.log(`Tempo para pegar pessoas: ${dataPessoas.getTime() - dataTodos.getTime()}ms`)
+
         const pessoaMap = new Map<string, string>()
         pessoasNomesIds.forEach((p) => {
           pessoaMap.set(p.id, p.nome)
@@ -266,7 +276,6 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           id: string
           pasta: string
           partesContrarias: string[]
-          poloCliente: string[]
         }[] = []
 
         await processInBatches(processosId, async (id) => {
@@ -320,43 +329,19 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               (p) => p.pessoa.pessoaTipo?.valor1 === 'Cliente',
             )
 
-            const poloCliente: string[] = []
-
-            if (clientes.length > 0) {
-              // Índice do primeiro Cliente
-              const primeiroIndiceCliente = participacoes.findIndex(
-                (p) => p.pessoa.pessoaTipo?.valor1 === 'Cliente',
-              )
-
-              // Se o primeiro cliente aparece na primeira posição geral → Autor
-              if (primeiroIndiceCliente === 0) {
-                poloCliente.push('Autor')
-              }
-
-              // Se há clientes em posições diferentes da primeira → Réu
-              const haClienteForaDaPrimeiraPosicao = participacoes.some(
-                (p, i) =>
-                  p.pessoa.pessoaTipo?.valor1 === 'Cliente' &&
-                  i !== primeiroIndiceCliente,
-              )
-
-              if (haClienteForaDaPrimeiraPosicao) {
-                poloCliente.push('Réu')
-              }
-            }
-
             pastasProcessos.push({
               id,
               pasta,
               partesContrarias: partesContrarias ?? null,
-              poloCliente,
             })
           })
         })
 
+        const dataPastasProcessos = new Date()
+
         const pastaMap = new Map<
-          string,
-          { pasta: string; partesContrarias: string[] }
+        string,
+        { pasta: string; partesContrarias: string[] }
         >()
         pastasProcessos.forEach((p) => {
           pastaMap.set(p.id, {
@@ -365,6 +350,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           })
         })
 
+        console.log(`Tempo para pegar pastas/processos: ${dataPastasProcessos.getTime() - dataPessoas.getTime()}ms`)
+        
         const transformedData: DataReturn[] = allNodes
           .filter((node) => node !== null)
           .map((node) => {
