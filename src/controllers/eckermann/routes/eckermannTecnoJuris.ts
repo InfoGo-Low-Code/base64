@@ -13,6 +13,7 @@ export type JwtEckermannSchema = {
 }
 
 type Node = {
+  distroId: string
   contaCredito: {
     valor1: string
   }
@@ -92,6 +93,7 @@ const dataReturn = z.object({
   usuario: z.string(),
   validacao: z.string(),
   banco: z.string(),
+  distribuicao: z.string()
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -163,6 +165,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
                     contaDebito { valor1 }
                     pessoaId
                     descricao
+                    distroId
                     createdAt
                     dia
                     efetivado
@@ -268,6 +271,52 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           pessoaMap.set(p.id, p.nome)
         })
 
+        // ===== DISTRUBIÇÕES POR ID =====
+        const distribuicoesIds = Array.from(
+          new Set(allNodes.map((n) => n.distroId).filter(Boolean))
+        )
+
+        const distribuicoesNomesIds: { id: string; numero: string }[] = []
+
+        await processInBatches(distribuicoesIds, async (id) => {
+          const { data } = await app.axios.post<{
+            data: {
+              juridicoDistribuicoesConnection: { nodes: { id: string, numero: string }[] }
+            }
+          }>(
+            'https://eyz.tecnojuris1.com.br/graphql',
+            {
+              query: `
+                query ($distroId: String) {
+                  juridicoDistribuicoesConnection(distribuicaoId: $distroId) {
+                    nodes {
+                      id
+                      numero
+                    }
+                  }
+                }
+              `,
+              variables: { distroId: id },
+            },
+            { headers: { AUTH_TOKEN: jwt_token } },
+          )
+
+          const { nodes } = data.data.juridicoDistribuicoesConnection
+
+          distribuicoesNomesIds.push(...nodes)
+        })
+
+        const dataDistribuicoes = new Date()
+
+        console.log(`Tempo para pegar distribuições: ${dataDistribuicoes.getTime() - dataPessoas.getTime()}ms`)
+
+        const distribuicaoMap = new Map<string, string>()
+        distribuicoesNomesIds.forEach((p) => {
+          distribuicaoMap.set(p.id, p.numero)
+        })
+
+
+        // ===== PROCESSOS POR ID =====
         const processosId = Array.from(
           new Set(allNodes.map((n) => n.processoId).filter(Boolean)),
         )
@@ -350,7 +399,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           })
         })
 
-        console.log(`Tempo para pegar pastas/processos: ${dataPastasProcessos.getTime() - dataPessoas.getTime()}ms`)
+        console.log(`Tempo para pegar pastas/processos: ${dataPastasProcessos.getTime() - dataDistribuicoes.getTime()}ms`)
         
         const transformedData: DataReturn[] = allNodes
           .filter((node) => node !== null)
@@ -370,6 +419,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             const unidade = node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO'
 
             const poloCliente = node.natureza?.valor1.includes('ATIVAS') ? 'Autor' : 'Réu'
+
+            const distribuicao = distribuicaoMap.get(node.distroId) ?? ''
 
             let validacao = 'OK'
 
@@ -408,6 +459,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               usuario: node.usuario.nome,
               validacao,
               banco: `${node.contaCredito && node.contaCredito.valor1}${node.contaDebito && ` - ${node.contaDebito.valor1}`}`,
+              distribuicao,
             }
           })
 

@@ -2,10 +2,24 @@ import { z } from 'zod'
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { env } from '@/env'
 
+const filesResponse = z.object({
+  name: z.string(),
+  url: z.string(),
+})
+
+type FilesResponse = z.infer<typeof filesResponse>
+
 export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
   app.get(
     '/eckermann/arquivosTecnojuris',
     {
+      schema: {
+        response: {
+          200: z.object({
+            files: z.array(filesResponse)
+          })
+        }
+      }
     },
     async (request, reply) => {
       const { CLIENT_ID_AZURE, CLIENT_SECRET_AZURE, TENANT_ID_AZURE } = env
@@ -18,7 +32,8 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
       // mas o Graph não aceita o formato final que o seu código gera.
 
       // 💡 Vamos tentar usar apenas a parte do token do link:
-      const shareUrl = 'https://uh1zfbiihzudpm-my.sharepoint.com/:f:/g/personal/gabrielsousa_eckermann_adv_br/Ek_73sCcqLtMp3-Nkq-JEzkBpRHwyGD_DHByQWjPRM16uQ?e=94cjMN'
+      // const shareUrl = 'https://uh1zfbiihzudpm-my.sharepoint.com/:f:/g/personal/gabrielsousa_eckermann_adv_br/Ek_73sCcqLtMp3-Nkq-JEzkBpRHwyGD_DHByQWjPRM16uQ?e=94cjMN'
+      const shareUrl = 'https://gugadev-my.sharepoint.com/:f:/g/personal/gustavosouza_gugadev_onmicrosoft_com/IgCmKRdMclo8RrKnXAk3ZZTdAf6VMRxMry9yaBOC_y8Dm0c?e=Kh68yf'
 
       // Para links 1drv.ms, o Graph espera um formato específico.
       // 1. Extraia o ID de compartilhamento do link longo.
@@ -32,11 +47,9 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
         .replace(/\//g, '_')
         .replace(/=+$/, '')
 
-      console.log('Token Base64 URL Gerado:', base64Url)
+      // console.log('Token Base64 URL Gerado:', base64Url)
 
       try {
-        // ... (Obtenção do access_token - parece correta)
-
         const {
           data: {
             access_token
@@ -51,8 +64,16 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           }),
         )
 
-        // ⚠️ O erro 400 está aqui
-        const graphResponse = await app.axios.get(
+        const { data: {
+          id: folderId,
+          parentReference
+        } } = await app.axios.get<{
+          id: string
+          parentReference: {
+            driveId: string
+            id: string
+          }
+        }>(
           `https://graph.microsoft.com/v1.0/shares/u!${base64Url}/driveItem`,
           {
             headers: {
@@ -61,14 +82,33 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           },
         )
         
-        // Se a chamada for bem-sucedida, você pode retornar os dados da pasta
-        return reply.send(graphResponse.data)
+        const { driveId, id } = parentReference
 
+        // console.log({id, folderId})
+
+        const { data: {
+          value: files
+        } } = await app.axios.get<{
+          value: {
+            "@microsoft.graph.downloadUrl": string
+            name: string
+          }[]
+        }>(
+          `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}/children`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`
+            }
+          }
+        )
+
+        const formattedFiles: FilesResponse[] = files.map((file) => ({
+          name: file.name,
+          url: file['@microsoft.graph.downloadUrl'],
+        }))
+
+        return reply.send({ files: formattedFiles })
       } catch (e: any) {
-        // O erro 400 ocorre na chamada ao Graph. Se o token Azure estiver ok,
-        // o problema está na URL codificada.
-
-        // Imprima o corpo da resposta de erro do Graph, se disponível.
         if (e.response && e.response.data) {
           console.error('Resposta de erro do Graph:', e.response.data)
         }

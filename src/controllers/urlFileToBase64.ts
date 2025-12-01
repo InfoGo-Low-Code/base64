@@ -5,6 +5,7 @@ import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRe
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 import { basename, extname } from 'node:path'
 import { lookup } from 'mime-types'
+import { setUserUsage } from '@/utils/audisa/routeUsage'
 
 export function urlFileToBase64(app: FastifyZodTypedInstance) {
   app.post(
@@ -14,6 +15,7 @@ export function urlFileToBase64(app: FastifyZodTypedInstance) {
         body: z.object({
           url: z.string().url(),
           nomeArquivo: z.string().optional(),
+          user: z.string(),
         }),
         response: {
           200: z.object({
@@ -27,7 +29,9 @@ export function urlFileToBase64(app: FastifyZodTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { url, nomeArquivo } = request.body
+      const { url, nomeArquivo, user } = request.body
+
+      setUserUsage(user)
 
       try {
         const { data } = await app.axios.get(url, {
