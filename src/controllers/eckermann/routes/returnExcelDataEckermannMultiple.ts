@@ -151,6 +151,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let carteira = ''
           if (!rawCarteira || rawCarteira === '?') {
             carteira = '?'
+          } else if (rawCarteira === 'PENDENTE') {
+            carteira = 'PENDENTE'
           } else {
             // Caso tenha valor, validar
             if (!validCarteira.has(rawCarteira.trim())) {
@@ -175,6 +177,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let descricao_honorario = ''
           if (!rawHonorario || rawHonorario === '?') {
             descricao_honorario = '?'
+          } else if (rawHonorario === 'PENDENTE') {
+            descricao_honorario = 'PENDENTE'
           } else {
             descricao_honorario = rawHonorario.trim()
           }
@@ -243,6 +247,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let fonte_pagadora = ''
           if (!rawFontePagadora || rawFontePagadora === '?') {
             fonte_pagadora = '?'
+          } else if (rawFontePagadora === 'PENDENTE') {
+            fonte_pagadora = 'PENDENTE'
           } else {
             // Caso tenha valor, validar
             if (!validFontePagadora.has(rawFontePagadora)) {
@@ -252,7 +258,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
                 campo: campoAtual,
                 mensagem: 'Valor inválido no campo FONTE PAGADORA',
                 valorRecebido,
-                valorEsperado: undefined
+                valorEsperado: 'CLIENTE, DEVEDOR, FORNECEDOR'
               })
             }
             fonte_pagadora = rawFontePagadora.trim()
@@ -265,7 +271,9 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
             !line['N. DO RECIBO/PARCELA']
             || String(line['N. DO RECIBO/PARCELA']).trim() === ''
               ? '?'
-              : String(line['N. DO RECIBO/PARCELA']).trim()
+              : String(line['N. DO RECIBO/PARCELA']) === 'PENDENTE'
+                ? 'PENDENTE'
+                : String(line['N. DO RECIBO/PARCELA']).trim()
 
 
 
@@ -287,7 +295,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
               campo: campoAtual,
               mensagem: 'Valor inválido no campo VALOR VALIDADO',
               valorRecebido,
-              valorEsperado: undefined
+              valorEsperado: 'SIM, NÃO'
             })
           } else {
             valor_validado = mapValorValidado[line['VALOR VALIDADO']]
@@ -314,8 +322,10 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           const rawBanco = line['BANCO']
 
           let banco = ''
-          if (!rawBanco || rawBanco === '') {
+          if (!rawBanco || rawBanco === '' || rawBanco === '?') {
             banco = 'NÃO INFORMADO'
+          } else if (rawBanco === 'PENDENTE') {
+            banco = 'PENDENTE'
           } else {
             // Caso tenha valor, validar
             if (!validBanco.has(rawBanco)) {
@@ -390,7 +400,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
 
 
           // === STATUS === //
-          campoAtual = 'PAGO'
+          campoAtual = 'STATUS'
           
           const mapStatus: Record<string, string> = {
             'OK': 'PAGO',
@@ -407,7 +417,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
               campo: campoAtual,
               mensagem: 'Valor inválido no campo PAGO',
               valorRecebido,
-              valorEsperado: undefined
+              valorEsperado: 'OK, PAGO, PENDENTE'
             })
           } else {
             status = mapStatus[line['PAGO']]

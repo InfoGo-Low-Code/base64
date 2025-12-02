@@ -21,6 +21,7 @@ const registroSchema = z.object({
   socio: z.string(),
   empresa: z.string(),
   valor_validado: z.number().nullable().optional(),
+  smart_key: z.string(),
 })
 
 export function eckermannContasReceber(app: FastifyZodTypedInstance) {
@@ -55,6 +56,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
       const table = new sql.Table('EckermannContasReceberType')
 
       table.columns.add('id', sql.NVarChar(400))
+      table.columns.add('smart_key', sql.NVarChar(255))
       table.columns.add('cliente', sql.NVarChar(500))
       table.columns.add('carteira', sql.NVarChar(500))
       table.columns.add('descricao_honorario', sql.NVarChar(500))
@@ -76,20 +78,21 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
       for (const r of registros) {
         table.rows.add(
           r.id,
+          r.smart_key,
           r.cliente,
           r.carteira,
           r.descricao_honorario,
-          r.data_vencimento ? new Date(r.data_vencimento) : null,
+          r.data_vencimento ? r.data_vencimento : null,
           r.codigo_identificacao,
           r.valor,
           r.recibo_parcela,
           r.status,
           r.fonte_pagadora,
           r.banco,
-          r.data_pagamento ? new Date(r.data_pagamento) : null,
+          r.data_pagamento ? r.data_pagamento : null,
           r.socio,
           r.empresa,
-          r.valor_validado ?? 0
+          r.valor_validado ?? 0,
         )
       }
 
@@ -105,7 +108,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
 
         const stats = {
           registrosInseridos: result.recordset.find((r: any) => r.ActionType === 'INSERT')?.Count || 0,
-          registrosAtualizados: result.recordset.find((r: any) => r.ActionType === 'UPDATED_REAL')?.Count || 0,
+          registrosAtualizados: result.recordset.find((r: any) => r.ActionType === 'UPDATED')?.Count || 0,
           registrosDuplicados: result.recordset.find((r: any) => r.ActionType === 'DUPLICATE')?.Count || 0,
         }
 
