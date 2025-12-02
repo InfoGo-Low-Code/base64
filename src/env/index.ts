@@ -11,9 +11,9 @@ const envSchema = z.object({
   DB_PORT: z.coerce.number().default(1433),
   CONVERTAPI_SECRET: z.string(),
   DB_URL_COVABRA: z.string().url(),
-  // TENANT_ID_AZURE: z.string(),
-  // CLIENT_ID_AZURE: z.string(),
-  // CLIENT_SECRET_AZURE: z.string(),
+  TENANT_ID_AZURE: z.string(),
+  CLIENT_ID_AZURE: z.string(),
+  CLIENT_SECRET_AZURE: z.string(),
 })
 
 export const env = envSchema.parse(process.env)
