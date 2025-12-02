@@ -43,30 +43,28 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
             data AS 'DATA',
             cliente AS 'CLIENTE',
             CASE
-              WHEN cliente LIKE '%(%)%' 
-                AND RIGHT(LTRIM(RTRIM(cliente)), 1) = ')'
-              THEN
-              SUBSTRING(
-                cliente,
-                LEN(cliente) - CHARINDEX('(', REVERSE(cliente)) + 2,
-                LEN(cliente) - (LEN(cliente) - CHARINDEX('(', REVERSE(cliente)) + 2)
-              )
-              ELSE
-              'NÃO INFORMADO'
+                WHEN cliente LIKE '%(%)%' THEN
+                    SUBSTRING(
+                        cliente,
+                        CHARINDEX('(', cliente) + 1,
+                        CHARINDEX(')', cliente) - CHARINDEX('(', cliente) - 1
+                    )
+                ELSE
+                    'CÍVEL'
             END AS 'CARTEIRA',
             poloCliente AS 'PÓLO',
             tipo AS 'TIPO DE DESPESA',
             descricao AS 'DESCRIÇÃO DA DESPESA',
-            processoId AS 'PROCESSO',
+            distribuicao AS 'PROCESSO',
             partesContrarias AS 'NOME DE IDENTIFICAÇÃO',
             pasta AS 'COD. CLIENTE',
-            contaDebito AS 'BANCO',
+            banco AS 'BANCO',
             valor AS 'VALOR',
             CASE
               WHEN efetivado = 1 THEN 'PAGO'
               ELSE 'PENDENTE'
             END AS 'PAGO',
-            contaCredito AS 'BANCO PAGAMENTO',
+            '' AS 'BANCO PAGAMENTO',
             usuario AS 'ADICIONADO POR',
             validacao AS 'OBS',
             unidade AS 'UNIDADE',
@@ -78,7 +76,7 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
                   DATEADD(DAY, 2, data)
 
               ELSE 
-                  DATEADD(DAY, 1, data)  -- Caso normal
+                  DATEADD(DAY, 1, data)
           END AS 'DIA DO PAGAMENTO'
           FROM dbo.eckermann_tecnojuris
           WHERE id IN ('${idsFormatados}')
