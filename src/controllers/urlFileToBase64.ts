@@ -15,7 +15,7 @@ export function urlFileToBase64(app: FastifyZodTypedInstance) {
         body: z.object({
           url: z.string().url(),
           nomeArquivo: z.string().optional(),
-          user: z.string(),
+          user: z.string().optional(),
         }),
         response: {
           200: z.object({
@@ -31,7 +31,7 @@ export function urlFileToBase64(app: FastifyZodTypedInstance) {
     async (request, reply) => {
       const { url, nomeArquivo, user } = request.body
 
-      setUserUsage(user)
+      user && setUserUsage(user)
 
       try {
         const { data } = await app.axios.get(url, {
