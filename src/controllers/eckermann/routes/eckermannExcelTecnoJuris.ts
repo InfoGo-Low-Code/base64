@@ -28,6 +28,11 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
         body: z.object({
           registros: z.array(z.string()),
         }),
+        response: {
+          200: z.object({
+            base64: z.string(),
+          })
+        }
       },
     },
     async (request, reply) => {
@@ -39,6 +44,8 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
 
       try {
         const { recordset } = await db.query<TecnoJuris[]>(`
+          USE dw_hmetrix;
+
           SELECT
             data AS 'DATA',
             cliente AS 'CLIENTE',
@@ -84,13 +91,9 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
 
         const buffer = await createTecnoJurisExcel(recordset)
 
-        return reply
-          .header(
-            'content-type',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          )
-          .header('content-disposition', `attachment; filename=TECNOJURIS.xlsx`)
-          .send(buffer)
+        const base64 = buffer.toString('base64')
+
+        return reply.send({ base64 })
       } catch (error: any) {
         return reply.internalServerError(error.message)
       }
