@@ -209,7 +209,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           blankrows: true,
         })
 
-        const regexAccount = new RegExp(/^\d+(?:\.\d+){4,}$/)
+        const regexAccount = new RegExp(/^(?:\d\.\d\.\d\.\d{2}\.\d{5}|\d{10})$/)
 
         let contaAtual = ''
 
