@@ -1,5 +1,6 @@
 import { TecnoJuris } from '@/controllers/eckermann/routes/eckermannExcelTecnoJuris'
 import { Workbook } from 'exceljs'
+import { randomUUID } from 'node:crypto'
 
 export async function createTecnoJurisExcel(data: TecnoJuris[]) {
   const workbook = new Workbook()
@@ -174,7 +175,7 @@ export async function createTecnoJurisExcel(data: TecnoJuris[]) {
 
   // ===== Gerar Buffer =====
   const buffer = await workbook.xlsx.writeBuffer()
-  workbook.xlsx.writeFile('./uploads/excel.xlsx')
+  // workbook.xlsx.writeFile('./uploads/excel.xlsx')
 
   return Buffer.from(buffer)
 }
