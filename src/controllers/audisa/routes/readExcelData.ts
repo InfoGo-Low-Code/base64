@@ -150,6 +150,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           201: z.object({
             message: z.literal('Registros inseridos com sucesso'),
             registrosInseridos: z.number(),
+            keyPassos: z.array(z.string()),
           }),
           400: zodErrorBadRequestResponseSchema,
           500: fastifyErrorResponseSchema,
@@ -159,7 +160,9 @@ export function readExcelData(app: FastifyZodTypedInstance) {
     async (request, reply) => {
       const { url, empresa, user, data_hora } = request.body
 
-      console.log('=== EMPRESA RECEBIDA ===', empresa)
+      const keyPassos: string[] = []
+
+      keyPassos.push('=== EMPRESA RECEBIDA ===', empresa)
       
       removeUserUsage(user)
       setUserUsage(user)
@@ -175,7 +178,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           responseType: 'arraybuffer',
         })
 
-        console.log('=== EMPRESA DOWNLOAD ARQUIVO ===', empresa)
+        keyPassos.push('=== EMPRESA DOWNLOAD ARQUIVO ===', empresa)
 
         const filename = basename(new URL(url).pathname)
         filePath = `./uploads/${filename}`
@@ -213,7 +216,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           blankrows: true,
         })
 
-        console.log('=== EMPRESA LEITURA EXCEL ===', empresa)
+        keyPassos.push('=== EMPRESA LEITURA EXCEL ===', empresa)
 
         const regexAccount = new RegExp(/^\d+(?:\.?\d+)*$/)
 
@@ -328,7 +331,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           ORDER BY TABLE_NAME DESC
         `)
 
-        console.log('=== EMPRESA QUERY BANCO EXISTE? ===', empresa, existingTables)
+        keyPassos.push('=== EMPRESA QUERY BANCO EXISTE? ===', empresa, existingTables.toString())
 
         if (existingTables.length > 0) {
           const comandos = toSQLInsert(registers, empresa)
@@ -345,6 +348,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           return reply.status(201).send({
             message: 'Registros inseridos com sucesso',
             registrosInseridos,
+            keyPassos,
           })
         }
       } catch (e: any) {
@@ -356,7 +360,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       }
 
       try {
-        console.log('=== EMPRESA QUERY CREATE ===', empresa)
+        keyPassos.push('=== EMPRESA QUERY CREATE ===', empresa)
 
         await db.query(`
           CREATE TABLE razao_${empresa} (
@@ -387,7 +391,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
       const comandos = toSQLInsert(registers, empresa)
 
-      console.log('=== EMPRESA QUERY INSERT ===', empresa)
+      keyPassos.push('=== EMPRESA QUERY INSERT ===', empresa)
 
       const { inserted_data: registrosInseridos } = await runBatchInChunks(
         comandos,
@@ -401,6 +405,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       return reply.status(201).send({
         message: 'Registros inseridos com sucesso',
         registrosInseridos,
+        keyPassos,
       })
     },
   )
