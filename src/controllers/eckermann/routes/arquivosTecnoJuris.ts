@@ -91,7 +91,7 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           value: files
         } } = await app.axios.get<{
           value: {
-            webUrl: string
+            "@microsoft.graph.downloadUrl": string
             name: string
           }[]
         }>(
@@ -105,7 +105,7 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
 
         const formattedFiles: FilesResponse[] = files.map((file) => ({
           name: file.name,
-          url: file.webUrl,
+          url: file['@microsoft.graph.downloadUrl'],
         }))
 
         return reply.send({ files: formattedFiles })
