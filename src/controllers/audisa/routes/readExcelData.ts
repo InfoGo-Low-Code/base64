@@ -158,6 +158,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
     },
     async (request, reply) => {
       const { url, empresa, user, data_hora } = request.body
+
+      console.log('=== EMPRESA RECEBIDA ===', empresa)
       
       removeUserUsage(user)
       setUserUsage(user)
@@ -172,6 +174,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
         const { data } = await app.axios.get(url, {
           responseType: 'arraybuffer',
         })
+
+        console.log('=== EMPRESA DOWNLOAD ARQUIVO ===', empresa)
 
         const filename = basename(new URL(url).pathname)
         filePath = `./uploads/${filename}`
@@ -208,6 +212,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           ],
           blankrows: true,
         })
+
+        console.log('=== EMPRESA LEITURA EXCEL ===', empresa)
 
         const regexAccount = new RegExp(/^\d+(?:\.?\d+)*$/)
 
@@ -314,12 +320,15 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           }
         })
 
+        
         const { recordset: existingTables } = await db.query(`
           SELECT TABLE_NAME
           FROM INFORMATION_SCHEMA.TABLES
           WHERE TABLE_NAME LIKE 'razao_${empresa}'
           ORDER BY TABLE_NAME DESC
         `)
+
+        console.log('=== EMPRESA QUERY BANCO EXISTE? ===', empresa, existingTables)
 
         if (existingTables.length > 0) {
           const comandos = toSQLInsert(registers, empresa)
@@ -347,6 +356,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       }
 
       try {
+        console.log('=== EMPRESA QUERY CREATE ===', empresa)
+
         await db.query(`
           CREATE TABLE razao_${empresa} (
             data_hora DATETIME,
@@ -375,6 +386,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       }
 
       const comandos = toSQLInsert(registers, empresa)
+
+      console.log('=== EMPRESA QUERY INSERT ===', empresa)
 
       const { inserted_data: registrosInseridos } = await runBatchInChunks(
         comandos,
