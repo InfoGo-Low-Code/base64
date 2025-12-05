@@ -32,8 +32,9 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
       // mas o Graph não aceita o formato final que o seu código gera.
 
       // 💡 Vamos tentar usar apenas a parte do token do link:
-      // const shareUrl = 'https://uh1zfbiihzudpm-my.sharepoint.com/:f:/g/personal/gabrielsousa_eckermann_adv_br/Ek_73sCcqLtMp3-Nkq-JEzkBpRHwyGD_DHByQWjPRM16uQ?e=94cjMN'
-      const shareUrl = 'https://gugadev-my.sharepoint.com/:f:/g/personal/gustavosouza_gugadev_onmicrosoft_com/IgCmKRdMclo8RrKnXAk3ZZTdAf6VMRxMry9yaBOC_y8Dm0c?e=Kh68yf'
+      const shareUrl = 'https://uh1zfbiihzudpm-my.sharepoint.com/:f:/g/personal/gabrielsousa_eckermann_adv_br/Ek_73sCcqLtMp3-Nkq-JEzkBpRHwyGD_DHByQWjPRM16uQ?e=94cjMN'
+      // const shareUrl = 'https://uh1zfbiihzudpm-my.sharepoint.com/:f:/g/personal/suporte_eckermann_adv_br/IgCzId0j7me3SrhXg7jr2D1yAZkZ2wtnfRVApkOqc7k-8Tw?e=HSP9Ap'
+      // const shareUrl = 'https://gugadev-my.sharepoint.com/:f:/g/personal/gustavosouza_gugadev_onmicrosoft_com/IgCmKRdMclo8RrKnXAk3ZZTdAf6VMRxMry9yaBOC_y8Dm0c?e=Kh68yf'
 
       // Para links 1drv.ms, o Graph espera um formato específico.
       // 1. Extraia o ID de compartilhamento do link longo.

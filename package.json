@@ -36,6 +36,7 @@
     "postgres": "^3.4.7",
     "pptxgenjs": "^4.0.1",
     "python-shell": "^5.0.0",
+    "tesseract.js": "^6.0.1",
     "uuid": "^11.1.0",
     "xlsx": "^0.18.5",
     "zod": "^3.24.3",
