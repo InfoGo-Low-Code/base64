@@ -15,9 +15,9 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
     {
       schema: {
         response: {
-          200: z.object({
-            files: z.array(filesResponse)
-          })
+          // 200: z.object({
+          //   files: z.array(filesResponse)
+          // })
         }
       }
     },
@@ -91,7 +91,7 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           value: files
         } } = await app.axios.get<{
           value: {
-            "@microsoft.graph.downloadUrl": string
+            webUrl: string
             name: string
           }[]
         }>(
@@ -105,7 +105,7 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
 
         const formattedFiles: FilesResponse[] = files.map((file) => ({
           name: file.name,
-          url: file['@microsoft.graph.downloadUrl'],
+          url: file.webUrl,
         }))
 
         return reply.send({ files: formattedFiles })
