@@ -9,6 +9,7 @@ import { excelDateToJSDate } from '@/utils/parseXlsxDate'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { ConnectionPool, Request } from 'mssql'
 import { removeUserUsage, setUserUsage } from '@/utils/audisa/routeUsage'
+import { normalize } from '@/utils/normalize'
 
 const excelDataSchema = z.object({
   A: z.string(),
@@ -218,14 +219,17 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
         keyPassos.push('=== EMPRESA LEITURA EXCEL ===', empresa)
 
-        const regexAccount = new RegExp(/^\d+(?:\.?\d+)*$/)
+        const regexAccount = new RegExp(/^(?:\d\.\d\.\d\.\d{2}\.\d{5}|\d{10})$/)
 
         let contaAtual = ''
 
         let colMap: Record<string, keyof ExcelDataSchema> = {} as any
 
         dataXlsx.forEach((register, idx) => {
-          const accountValidation = regexAccount.test(register.A)
+          const accountValidation =
+            register.A
+            && register.A.length >= 6
+            && regexAccount.test(register.A)
 
           if (accountValidation) {
             contaAtual = register.A
@@ -409,12 +413,4 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       })
     },
   )
-}
-
-function normalize(str: string) {
-  return String(str)
-    .normalize('NFD') // separa acentos
-    .replace(/[\u0300-\u036f]/g, '') // remove acentos
-    .toUpperCase()
-    .trim()
 }
