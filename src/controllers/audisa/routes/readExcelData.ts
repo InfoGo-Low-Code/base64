@@ -219,7 +219,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
         keyPassos.push('=== EMPRESA LEITURA EXCEL ===', empresa)
 
-        const regexAccount = new RegExp(/^\d+(?:\.\d+){4}$/)
+        // const regexAccount = new RegExp(/^\d+(?:\.\d+){4}$/)
 
         let contaAtual = ''
 
@@ -228,8 +228,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
         dataXlsx.forEach((register, idx) => {
           const accountValidation =
             register.A
-            && register.A.length >= 6
-            && regexAccount.test(register.A)
+            && String(register.A).trim().length >= 6
+            && !String(register.A).includes('/')
 
           if (accountValidation) {
             contaAtual = register.A
@@ -250,7 +250,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
               lote: keys[normalizedRows.findIndex((c) => c === 'LOTE')],
               lanc: keys[normalizedRows.findIndex((c) => c === 'LANC')],
               cPartida: keys[normalizedRows.findIndex((c) => c === 'C/PARTIDA')],
-              historico: keys[normalizedRows.findIndex((c) => c === 'HISTORICO')],
+              historico: keys[normalizedRows.findIndex((c) => c === 'HISTORICO')] || keys[normalizedRows.findIndex((c) => c === 'DESCRICAO')],
               debito: keys[normalizedRows.findIndex((c) => c === 'DEBITO')],
               credito: keys[normalizedRows.findIndex((c) => c === 'CREDITO')],
               saldo: keys[normalizedRows.findIndex((c) => c === 'SALDO')],
