@@ -126,7 +126,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           const cliente =
             !line.CLIENTE
             || line.CLIENTE.trim() === ''
-              ? '?'
+              ? 'N/A'
               : String(line.CLIENTE.trim())
 
 
@@ -151,8 +151,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let carteira = ''
           if (!rawCarteira || rawCarteira === '?') {
             carteira = '?'
-          } else if (rawCarteira === 'PENDENTE') {
-            carteira = 'PENDENTE'
+          } else if (rawCarteira === 'PENDENTE' || rawCarteira === 'N/A') {
+            carteira = rawCarteira
           } else {
             // Caso tenha valor, validar
             if (!validCarteira.has(rawCarteira.trim())) {
@@ -177,8 +177,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let descricao_honorario = ''
           if (!rawHonorario || rawHonorario === '?') {
             descricao_honorario = '?'
-          } else if (rawHonorario === 'PENDENTE') {
-            descricao_honorario = 'PENDENTE'
+          } else if (rawHonorario === 'PENDENTE' || rawHonorario === 'N/A') {
+            descricao_honorario = rawHonorario
           } else {
             descricao_honorario = rawHonorario.trim()
           }
@@ -190,7 +190,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let data_pagamento
           if (typeof line.DATA === 'number') {
             data_pagamento = excelDateToJSDate(line.DATA)
-          } else if (!line.DATA || line.DATA.trim() === '' || line.DATA === 'PENDENTE' || line.DATA === '?' || !line.DATA?.includes('/')) {
+          } else if (!line.DATA || line.DATA.trim() === '' || line.DATA === 'PENDENTE' || line.DATA === 'N/A' || line.DATA === '?' || !line.DATA?.includes('/')) {
             data_pagamento = undefined
           } else {
             try {
@@ -215,7 +215,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let data_vencimento
           if (typeof line['DATA DO CRÉDITO'] === 'number') {
             data_vencimento = excelDateToJSDate(line['DATA DO CRÉDITO'])
-          } else if (!line['DATA DO CRÉDITO'] || line['DATA DO CRÉDITO'].trim() === '' || line['DATA DO CRÉDITO'] === 'PENDENTE' || line['DATA DO CRÉDITO'] === '?' || !line['DATA DO CRÉDITO']?.includes('/')) {
+          } else if (!line['DATA DO CRÉDITO'] || line['DATA DO CRÉDITO'].trim() === '' || line['DATA DO CRÉDITO'] === 'PENDENTE' || line['DATA DO CRÉDITO'] === 'N/A' || line['DATA DO CRÉDITO'] === '?' || !line['DATA DO CRÉDITO']?.includes('/')) {
             data_vencimento = undefined
           } else {
             try {
@@ -247,8 +247,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let fonte_pagadora = ''
           if (!rawFontePagadora || rawFontePagadora === '?') {
             fonte_pagadora = '?'
-          } else if (rawFontePagadora === 'PENDENTE') {
-            fonte_pagadora = 'PENDENTE'
+          } else if (rawFontePagadora === 'PENDENTE' || rawFontePagadora === 'N/A') {
+            fonte_pagadora = rawFontePagadora
           } else {
             // Caso tenha valor, validar
             if (!validFontePagadora.has(rawFontePagadora)) {
@@ -271,8 +271,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
             !line['N. DO RECIBO/PARCELA']
             || String(line['N. DO RECIBO/PARCELA']).trim() === ''
               ? '?'
-              : String(line['N. DO RECIBO/PARCELA']) === 'PENDENTE'
-                ? 'PENDENTE'
+              : String(line['N. DO RECIBO/PARCELA']) === 'PENDENTE' || String(line['N. DO RECIBO/PARCELA']) === 'N/A'
+                ? String([line['N. DO RECIBO/PARCELA']])
                 : String(line['N. DO RECIBO/PARCELA']).trim()
 
 
@@ -324,8 +324,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           let banco = ''
           if (!rawBanco || rawBanco === '' || rawBanco === '?') {
             banco = 'NÃO INFORMADO'
-          } else if (rawBanco === 'PENDENTE') {
-            banco = 'PENDENTE'
+          } else if (rawBanco === 'PENDENTE' || rawBanco === 'N/A') {
+            banco = rawBanco
           } else {
             // Caso tenha valor, validar
             if (!validBanco.has(rawBanco)) {
@@ -405,7 +405,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           const mapStatus: Record<string, string> = {
             'OK': 'PAGO',
             'PAGO': 'PAGO',
-            'PENDENTE': 'PENDENTE'
+            'PENDENTE': 'PENDENTE',
+            'N/A': 'PENDENTE',
           }
 
           let status = ''
