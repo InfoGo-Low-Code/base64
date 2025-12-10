@@ -219,7 +219,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
         keyPassos.push('=== EMPRESA LEITURA EXCEL ===', empresa)
 
-        const regexAccount = new RegExp(/^(?:\d\.\d\.\d\.\d{2}\.\d{5}|\d{10})$/)
+        const regexAccount = new RegExp(/^\d+(?:\.\d+){4}$/)
 
         let contaAtual = ''
 
@@ -302,7 +302,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
             let contaPartida: string | null = null
             if (
               cPartida &&
-              !regexAccount.test(cPartida) &&
+              // !regexAccount.test(cPartida) &&
               normalize(cPartida) !== 'MULTIPLO'
             ) {
               contaPartida = null
