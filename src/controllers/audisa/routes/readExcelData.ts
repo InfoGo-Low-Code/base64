@@ -163,7 +163,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
       const keyPassos: string[] = []
 
-      keyPassos.push('=== EMPRESA RECEBIDA ===', empresa)
+      keyPassos.push(`=== EMPRESA RECEBIDA: ${empresa}`)
       
       removeUserUsage(user)
       setUserUsage(user)
@@ -179,7 +179,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           responseType: 'arraybuffer',
         })
 
-        keyPassos.push('=== EMPRESA DOWNLOAD ARQUIVO ===', empresa)
+        keyPassos.push(`=== EMPRESA DOWNLOAD ARQUIVO ${empresa}`)
 
         const filename = basename(new URL(url).pathname)
         filePath = `./uploads/${filename}`
@@ -217,7 +217,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
           blankrows: true,
         })
 
-        keyPassos.push('=== EMPRESA LEITURA EXCEL ===', empresa)
+        keyPassos.push(`=== EMPRESA LEITURA EXCEL: ${empresa}`)
 
         let contaAtual = ''
 
@@ -326,13 +326,17 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
         
         const { recordset: existingTables } = await db.query(`
+          USE dw_audisa;
+
           SELECT TABLE_NAME
           FROM INFORMATION_SCHEMA.TABLES
           WHERE TABLE_NAME LIKE 'razao_${empresa}'
           ORDER BY TABLE_NAME DESC
         `)
 
-        keyPassos.push('=== EMPRESA QUERY BANCO EXISTE? ===', empresa, existingTables.toString())
+        console.log(existingTables)
+
+        keyPassos.push(`=== EMPRESA QUERY BANCO EXISTE?: ${empresa}`)
 
         if (existingTables.length > 0) {
           const comandos = toSQLInsert(registers, empresa)
@@ -361,9 +365,11 @@ export function readExcelData(app: FastifyZodTypedInstance) {
       }
 
       try {
-        keyPassos.push('=== EMPRESA QUERY CREATE ===', empresa)
+        keyPassos.push(`=== EMPRESA QUERY CREATE: ${empresa}`)
 
         await db.query(`
+          USE dw_audisa;
+
           CREATE TABLE razao_${empresa} (
             data_hora DATETIME,
             conta NVARCHAR(255),
@@ -392,7 +398,7 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
       const comandos = toSQLInsert(registers, empresa)
 
-      keyPassos.push('=== EMPRESA QUERY INSERT ===', empresa)
+      keyPassos.push(`=== EMPRESA QUERY INSERT: ${empresa}`)
 
       const { inserted_data: registrosInseridos } = await runBatchInChunks(
         comandos,
