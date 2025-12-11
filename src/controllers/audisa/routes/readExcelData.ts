@@ -219,17 +219,14 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
         keyPassos.push('=== EMPRESA LEITURA EXCEL ===', empresa)
 
-        // const regexAccount = new RegExp(/^\d+(?:\.\d+){4}$/)
-
         let contaAtual = ''
 
         let colMap: Record<string, keyof ExcelDataSchema> = {} as any
 
         dataXlsx.forEach((register, idx) => {
           const accountValidation =
-            register.A
-            && String(register.A).trim().length >= 6
-            && !String(register.A).includes('/')
+            dataXlsx[idx+1] &&
+            normalize(dataXlsx[idx + 1].A).trim() === 'DATA'
 
           if (accountValidation) {
             contaAtual = register.A
