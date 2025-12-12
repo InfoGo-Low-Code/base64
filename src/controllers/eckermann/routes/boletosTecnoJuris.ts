@@ -344,6 +344,7 @@ import { normalize } from '@/utils/normalize'
 import { env } from '@/env'
 import { ConnectionPool } from 'mssql'
 import { FastifyInstance } from 'fastify'
+import pLimit from 'p-limit'
 
 // NOTE: A função sleep não é mais necessária no loop de arquivos,
 // pois o Promise.all lidará com a concorrência.
@@ -676,12 +677,22 @@ export function boletosTecnoJuris(app: FastifyZodTypedInstance) {
 
       try {
         // 🚨 OTIMIZAÇÃO PRINCIPAL: Processamento em Paralelo com Promise.all
-        const processingPromises = filteredFiles.map(file => 
-          processFile(file, db, jwt_token, accessTokenGraph, app)
-        )
+        // const processingPromises = filteredFiles.map(file => 
+        //   processFile(file, db, jwt_token, accessTokenGraph, app)
+        // )
 
-        // Resolve todas as promessas de processamento de arquivos
-        const arrayInfo: InfoFound[] = await Promise.all(processingPromises)
+        // const arrayInfo: InfoFound[] = await Promise.all(processingPromises)
+
+        // limite de concorrência — ajuste conforme necessário
+        const limit = pLimit(4)
+
+        const arrayInfo = await Promise.all(
+          filteredFiles.map(file =>
+            limit(() =>
+              processFile(file, db, jwt_token, accessTokenGraph, app)
+            )
+          )
+        )
 
         // console.log(arrayInfo)
 
