@@ -3,8 +3,13 @@ import { env } from '@/env'
 import { createWorker } from 'tesseract.js'
 import { writeFile, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
+import { existsSync, mkdirSync } from 'node:fs'
 
 export async function ocrPdfToText(pdfBuffer: Buffer) {
+  if (!existsSync(`./uploads`)) {
+    mkdirSync(`./uploads`, { recursive: true })
+  }
+
   const tempPath = `./uploads/${randomUUID()}.pdf`
 
   // console.log(tempPath)
