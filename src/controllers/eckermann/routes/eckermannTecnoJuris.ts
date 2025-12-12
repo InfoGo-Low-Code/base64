@@ -418,7 +418,17 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
             const unidade = node.unidade ? node.unidade.valor1 : 'NÃO INFORMADO'
 
-            const poloCliente = node.natureza?.valor1.includes('ATIVAS') ? 'Autor' : 'Réu'
+            const valorNatureza = node.natureza?.valor1 ?? ''
+
+            let poloCliente: string
+
+            if (valorNatureza.includes('ATIVAS') || valorNatureza.includes('CAPOLETTI')) {
+              poloCliente = 'Autor'
+            } else if (valorNatureza.includes('PASSIVAS')) {
+              poloCliente = 'Réu'
+            } else {
+              poloCliente = 'Natureza Inválida'
+            }
 
             const distribuicao = distribuicaoMap.get(node.distroId) ?? ''
 

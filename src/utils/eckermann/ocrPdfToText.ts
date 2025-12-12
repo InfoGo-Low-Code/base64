@@ -1,34 +1,41 @@
 import ConvertAPI from 'convertapi'
 import { env } from '@/env'
 import { createWorker } from 'tesseract.js'
+import { writeFile, unlink } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 
-export async function ocrPdfToText(pdfPathOrUrl: string) {
-  const { CONVERTAPI_SECRET } = env
-  
-  const convertapi = new ConvertAPI(CONVERTAPI_SECRET)
+export async function ocrPdfToText(pdfBuffer: Buffer) {
+  const tempPath = `./uploads/${randomUUID()}.pdf`
 
-  const result = await convertapi.convert(
-    'png',
-    {
-      File: pdfPathOrUrl,
-    },
-    'pdf',
-  )
+  // console.log(tempPath)
 
-  const {
-    files,
-  } = result
+  // Salva o buffer como arquivo temporário
+  await writeFile(tempPath, pdfBuffer)
 
-  const pages = files.map(({ url }) => url)
+  try {
+    const convertapi = new ConvertAPI(env.CONVERTAPI_SECRET)
 
-  const worker = await createWorker('por')
-  let fullText = ''
+    const result = await convertapi.convert(
+      'png',
+      { File: tempPath },
+      'pdf'
+    )
 
-  for (const pageUrl of pages) {
-    const { data: { text } } = await worker.recognize(pageUrl)
-    fullText += text + '\n'
+    const pages = result.files.map(f => f.url)
+
+    const worker = await createWorker('por')
+    let fullText = ''
+
+    for (const pageUrl of pages) {
+      const { data: { text } } = await worker.recognize(pageUrl)
+      fullText += text + '\n'
+    }
+
+    await worker.terminate()
+    return fullText
+
+  } finally {
+    // Remove o arquivo temporário
+    await unlink(tempPath).catch(() => {})
   }
-
-  await worker.terminate()
-  return fullText
 }

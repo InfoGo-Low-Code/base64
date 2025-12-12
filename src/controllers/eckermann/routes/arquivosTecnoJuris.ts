@@ -4,7 +4,9 @@ import { env } from '@/env'
 
 const filesResponse = z.object({
   name: z.string(),
-  url: z.string(),
+  itemId: z.string(),
+  driveId: z.string(),
+  downloadUrl: z.string(),
 })
 
 type FilesResponse = z.infer<typeof filesResponse>
@@ -15,9 +17,9 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
     {
       schema: {
         response: {
-          // 200: z.object({
-          //   files: z.array(filesResponse)
-          // })
+          200: z.object({
+            files: z.array(filesResponse)
+          })
         }
       }
     },
@@ -91,8 +93,9 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           value: files
         } } = await app.axios.get<{
           value: {
-            "@microsoft.graph.downloadUrl": string
+            id: string
             name: string
+            "@microsoft.graph.downloadUrl": string
           }[]
         }>(
           `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}/children`,
@@ -104,8 +107,10 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
         )
 
         const formattedFiles: FilesResponse[] = files.map((file) => ({
+          driveId,
           name: file.name,
-          url: file['@microsoft.graph.downloadUrl'],
+          itemId: file.id,
+          downloadUrl: file['@microsoft.graph.downloadUrl'],
         }))
 
         return reply.send({ files: formattedFiles })
