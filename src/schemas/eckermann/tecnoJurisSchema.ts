@@ -12,14 +12,14 @@ export const tecnoJurisSchema = z.object({
   dvContaFavorecido: z.string().length(1), // DV da Conta
 
   // --- Dados de Identificação e Endereço ---
-  tipoInscricaoFavorecido: z.number().int().min(1).max(2), // 1=CPF, 2=CNPJ
-  inscricaoFavorecido: z.string().max(15), // CPF/CNPJ completo
-  nomeFavorecido: z.string().max(40), // Nome completo/Razão Social
-  enderecoFavorecido: z.string().max(40), // Rua e Número
-  bairroFavorecido: z.string().max(15), // Bairro
-  cidadeFavorecido: z.string().max(20), // Cidade
-  cepFavorecido: z.string().length(8), // CEP sem hífen
-  ufFavorecido: z.string().length(2), // UF (ex: 'SP')
+  tipoInscricaoFavorecido: z.number().int().min(1).max(2), // 1=CPF, 2=CNPJ ✅
+  inscricaoFavorecido: z.string().max(15), // CPF/CNPJ completo ✅
+  nomeFavorecido: z.string().max(40), // Nome completo/Razão Social ✅
+  enderecoFavorecido: z.string().max(40), // Rua e Número ✅
+  bairroFavorecido: z.string().max(15), // Bairro ✅
+  cidadeFavorecido: z.string().max(20), // Cidade ✅
+  cepFavorecido: z.string().length(8), // CEP sem hífen ✅
+  ufFavorecido: z.string().length(2), // UF (ex: 'SP') ✅
 
   // --- Outros Campos do CNAB ---
   dataPagamento: z.string().length(8), // Data Efetiva de Pagamento (DDMMAAAA)

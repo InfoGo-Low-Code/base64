@@ -1,342 +1,7 @@
-// import { z } from 'zod'
-// import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
-// import { PDFParse } from 'pdf-parse'
-// import { Boleto, validarBoleto } from '@mrmgomes/boleto-utils'
-// import { getEckermannConnection } from '@/database/eckermann'
-// import { JwtEckermannSchema } from './eckermannTecnoJuris'
-// import { ocrPdfToText } from '@/utils/eckermann/ocrPdfToText'
-// import { normalize } from '@/utils/normalize'
-// import { env } from '@/env'
-
-// const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
-// function normalizeValor(valor: string) {
-//   valor = valor.trim()
-
-//   // Remove tudo que não seja dígito, ponto ou vírgula
-//   valor = valor.replace(/[^\d.,]/g, '')
-
-//   // Detecta separador decimal: vírgula ou ponto
-//   const decimalMatch = valor.match(/([.,])(\d{2})$/)
-
-//   let decimalSeparator = null
-
-//   if (decimalMatch) {
-//     decimalSeparator = decimalMatch[1] // "." ou ","
-//   }
-
-//   // Remove todos os pontos e vírgulas
-//   valor = valor.replace(/[.,]/g, '')
-
-//   // Se tinha separador decimal real, recoloca ele antes dos últimos 2 dígitos
-//   if (decimalSeparator) {
-//     valor = valor.slice(0, -2) + '.' + valor.slice(-2)
-//   }
-
-//   return valor
-// }
-
-// type NodePessoa = {
-//   id: string
-//   nome: string
-//   cpf: string
-//   cnpj: string
-//   bairro: string
-//   cep: string
-//   cidade: string
-//   endereco: string
-//   estado: string
-//   numero: string
-// }
-
-// type RecordsetDb = {
-//   id: string,
-//   cliente: string
-// }
-
-// const infoFound = z.object({
-//   nomeArquivo: z.string(),
-//   validacaoBoleto: z.custom<Boleto>().nullable(),
-//   clienteTecnoJuris: z.array(z.custom<NodePessoa>()).nullable(),
-//   registroBancoDados: z.array(z.custom<RecordsetDb>()).nullable(),
-//   cpfCnpjEncontrado: z.array(z.string()),
-// })
-
-// type InfoFound = z.infer<typeof infoFound>
-
-// export function boletosTecnoJuris(app: FastifyZodTypedInstance) {
-//   app.post(
-//     '/eckermann/boletosTecnoJuris',
-//     {
-//       schema: {
-//         body: z.object({
-//           files: z.array(
-//             z.object({
-//               driveId: z.string(),
-//               itemId: z.string(),
-//               name: z.string(),
-//               downloadUrl: z.string()
-//             })  
-//           )
-//         }),
-//         response: {
-//           200: z.object({
-//             infoBoletos: z.array(infoFound)
-//           })
-//         }
-//       }
-//     },
-//     async (request, reply) => {
-//       const { files } = request.body
-
-//       const filteredFiles = files.filter(({ name }) => 
-//         !normalize(name).includes('AUTORIZACAO')
-//         && !normalize(name).includes('PIC')
-//         && !normalize(name).includes('PETICAO')
-//       )
-
-//       const arrayInfo: InfoFound[] = []
-
-//       const db = await getEckermannConnection()
-
-//       const {
-//         data: {
-//           usuario: { jwt_token },
-//         },
-//       } = await app.axios.post<JwtEckermannSchema>(
-//         'https://eyz.tecnojuris1.com.br/usuarios/sign_in.json',
-//         {
-//           usuario: {
-//             email: 'lmaximiano@eckermann.adv.br',
-//             password: 'CWRFBC',
-//             subdomain: 'eyz',
-//           },
-//         },
-//       )
-
-//       const { CLIENT_ID_AZURE, CLIENT_SECRET_AZURE, TENANT_ID_AZURE } = env
-
-//       const { data: { access_token: accessTokenGraph }} = await app.axios.post(
-//         `https://login.microsoftonline.com/${TENANT_ID_AZURE}/oauth2/v2.0/token`,
-//         new URLSearchParams({
-//           client_id: CLIENT_ID_AZURE,
-//           client_secret: CLIENT_SECRET_AZURE,
-//           scope: "https://graph.microsoft.com/.default",
-//           grant_type: "client_credentials"
-//         })
-//       )
-
-//       try {
-//         for (const [idx, { driveId, itemId, name, downloadUrl }] of filteredFiles.entries()) {
-//           // console.log('PROCESSANDO:', name, idx)
-
-//           const { data: pdfBuffer } = await app.axios.get(
-//             downloadUrl,
-//             {
-//               responseType: "arraybuffer",
-//               headers: {
-//                 Authorization: `Bearer ${accessTokenGraph}`
-//               }
-//             }
-//           )
-
-//           const parsedText = await new PDFParse({ data: pdfBuffer }).getText()
-
-//           const regexLinhaDigitavel = /\b\d{5}[.\s]?\d{5}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d[.\s]?\d{14}\b/g
-//           const regexCodigoBarras = /\b\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\b/g
-//           const regexCodigoBarrasComDV = /\b\d{11}-\d(?:\s+\d{11}-\d){3}\b/g
-//           const regexCpfCnpj = /\b\d{11,13}\s?\d{11,13}\s?\d{11,13}\s?\d{11,13}\b/g
-
-//           const linhaDigitavel = parsedText.text.match(regexLinhaDigitavel)
-//           const codigoBarras = parsedText.text.match(regexCodigoBarras)
-//           const codigoBarrasDv = parsedText.text.match(regexCodigoBarrasComDV)
-//           const cpfCnpjEncontrado = parsedText.text.match(regexCpfCnpj)
-
-//           let setCpfCnpj = [...new Set(cpfCnpjEncontrado)]
-//           let aSerValidado = linhaDigitavel || codigoBarras || codigoBarrasDv
-
-//           // 👉 Logs para ver onde quebra
-//           // console.log('Linha digitável:', linhaDigitavel)
-//           // console.log('Código de barras:', codigoBarras)
-//           // console.log('CPF/CNPJ:', setCpfCnpj)
-
-//           if (!aSerValidado) {
-//             // console.log('Tentando OCR…')
-
-//             const textFound = await ocrPdfToText(pdfBuffer)
-
-//             const linhaDigitavelOcr = textFound.match(regexLinhaDigitavel)
-//             const codigoBarrasOcr = textFound.match(regexCodigoBarras)
-//             const codigoBarrasDvOrc = textFound.match(regexCodigoBarrasComDV)
-//             const cpfCnpjEncontradoOcr = textFound.match(regexCpfCnpj)
-
-//             setCpfCnpj = [...new Set(cpfCnpjEncontradoOcr)]
-//             aSerValidado = codigoBarrasOcr || linhaDigitavelOcr || codigoBarrasDvOrc
-
-//             // console.log('OCR - Linha digitável:', linhaDigitavelOcr)
-//             // console.log('OCR - Código de barras:', codigoBarrasOcr)
-//             // console.log('OCR - CPF/CNPJ:', setCpfCnpj)
-
-//             if (!aSerValidado) {
-//               arrayInfo.push({
-//                 nomeArquivo: name,
-//                 validacaoBoleto: null,
-//                 clienteTecnoJuris: [],
-//                 registroBancoDados: [],
-//                 cpfCnpjEncontrado: [],
-//               })
-
-//               // console.log('⚠ Nada encontrado no arquivo:', name)
-//               continue
-//             }
-//           }
-
-//           const texto = aSerValidado![0]
-//           const somenteNumeros = String(texto.replace(/[^\d]/g, ''))
-//           const parsedBoleto = validarBoleto(somenteNumeros)
-
-//           const nomeLimpo = normalize(name).replace('-.PDF', '.PDF').replace('.PDF', '').trim()
-//           const lastDashIndex = nomeLimpo.lastIndexOf('-')
-//           let idPastaProcesso = nomeLimpo.substring(0, lastDashIndex).trim()
-
-//           if (idPastaProcesso.includes('- R')) {
-//             idPastaProcesso = idPastaProcesso.replace('- R', '').trim()
-
-//             // console.log(idPastaProcesso)
-//           }
-
-//           if (idPastaProcesso.includes('BRADESCO') || idPastaProcesso.includes('EEP') || idPastaProcesso.includes('NX')) {
-//             if (idPastaProcesso.includes('-')) {
-//               const [sigla, numero] = idPastaProcesso.split('-')
-
-//               idPastaProcesso = `${sigla.trim()} - ${numero.trim()}`
-//             } else {
-//               const [sigla, numero] = idPastaProcesso.split(' ')
-
-//               idPastaProcesso = `${sigla.trim()} - ${numero.trim()}`
-//             }
-
-//             // console.log(idPastaProcesso)
-//           }
-
-//           if (idPastaProcesso.includes('ITAU')) {
-//             if (idPastaProcesso.includes('-')) {
-//               const [_, numero] = idPastaProcesso.split('-')
-
-//               idPastaProcesso = `ITAÚ - ${numero.trim()}`
-//             } else {
-//               const [_, numero] = idPastaProcesso.split(' ')
-
-//               idPastaProcesso = `ITAÚ - ${numero.trim()}`
-//             }
-//           }
-
-//           if (idPastaProcesso.includes('AT')) {
-//             const [siglaAT, numero] = idPastaProcesso.split('-')
-//             idPastaProcesso = `${siglaAT.trim()} - ${numero.trim()}`
-
-//             // console.log(idPastaProcesso)
-//           }
-
-//           if (idPastaProcesso.includes('VISIO')) {
-//             const [siglaAT, numero] = idPastaProcesso.split('-')
-//             idPastaProcesso = `${siglaAT.trim()}  - ${numero.trim()}`
-
-//             // console.log(idPastaProcesso)
-//           }
-
-//           let valorRaw = nomeLimpo.substring(lastDashIndex + 1).trim()
-//           valorRaw = valorRaw.replace(/\(.*?\)/g, '').trim()
-//           const valorFormatado = normalizeValor(valorRaw)
-
-//           // console.log({nomeLimpo, idPastaProcesso, valorRaw, valorFormatado}, name)
-
-//           const query = `
-//             SELECT id, cliente, valor
-//             FROM dw_hmetrix.dbo.eckermann_tecnojuris
-//             WHERE pasta = '${idPastaProcesso}' AND valor = ${valorFormatado}
-//           `
-
-//           const { recordset } = await db.query<RecordsetDb[]>(query)
-
-//           if (recordset.length === 0) {
-//             console.log(query, recordset)
-//           }
-
-
-//           let nodes: NodePessoa[] | null = null
-
-//           if (recordset.length > 0) {
-//             await db.query(`
-//               UPDATE dw_hmetrix.dbo.eckermann_tecnojuris
-//               SET arquivoBoleto = 'graph://${driveId}/${itemId}'
-//               WHERE id = '${recordset[0].id}'
-//             `)
-
-//             const { data } = await app.axios.post<{
-//               data: {
-//                 pessoasConnection: {
-//                   nodes: NodePessoa[]
-//                 }
-//               }
-//             }>(
-//               'https://eyz.tecnojuris1.com.br/graphql',
-//               {
-//                 query: `
-//                   query ($nome: String) {
-//                     pessoasConnection(nome: $nome) {
-//                       nodes {
-//                         id
-//                         nome
-//                         cpf
-//                         cnpj
-//                         bairro
-//                         cep
-//                         cidade
-//                         endereco
-//                         estado
-//                         numero
-//                       }
-//                     }
-//                   }
-//                 `,
-//                 variables: { nome: recordset[0]?.cliente },
-//               },
-//               { headers: { AUTH_TOKEN: jwt_token } },
-//             )
-
-//             nodes = data.data.pessoasConnection.nodes || null
-//           }
-
-//           arrayInfo.push({
-//             nomeArquivo: name,
-//             validacaoBoleto: parsedBoleto,
-//             clienteTecnoJuris: nodes,
-//             registroBancoDados: recordset,
-//             cpfCnpjEncontrado: setCpfCnpj,
-//           })
-
-//           // console.log('✔ Finalizado arquivo:', name)
-
-//           await sleep(1500)
-//         }
-
-//         console.log(arrayInfo)
-
-//         return reply.send({ infoBoletos: arrayInfo })
-//       } catch (e: any) {
-//         console.log(e)
-
-//         return reply.internalServerError(e.message)
-//       }
-//     },
-//   )
-// }
-
-import { z } from 'zod'
+import { string, z } from 'zod'
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { PDFParse } from 'pdf-parse'
-import { Boleto, validarBoleto } from '@mrmgomes/boleto-utils'
+import { Boleto, identificarTipoBoleto, validarBoleto } from '@mrmgomes/boleto-utils'
 import { getEckermannConnection } from '@/database/eckermann'
 import { JwtEckermannSchema } from './eckermannTecnoJuris'
 import { ocrPdfToText } from '@/utils/eckermann/ocrPdfToText'
@@ -345,6 +10,10 @@ import { env } from '@/env'
 import { ConnectionPool } from 'mssql'
 import { FastifyInstance } from 'fastify'
 import pLimit from 'p-limit'
+import { extrairFavorecido } from '@/schemas/eckermann/favorecido'
+import sql from 'mssql'
+import { parseNomeArquivo } from '@/schemas/eckermann/parseNomeArquivo'
+import PQueue from 'p-queue'
 
 // NOTE: A função sleep não é mais necessária no loop de arquivos,
 // pois o Promise.all lidará com a concorrência.
@@ -357,17 +26,24 @@ import pLimit from 'p-limit'
 function normalizeValor(valor: string) {
   valor = valor.trim()
   valor = valor.replace(/[^\d.,]/g, '')
-  const decimalMatch = valor.match(/([.,])(\d{2})$/)
-  let decimalSeparator = null
+
+  const decimalMatch = valor.match(/([.,])(\d{1,2})$/)
+
+  let decimalDigits = 0
 
   if (decimalMatch) {
-    decimalSeparator = decimalMatch[1]
+    decimalDigits = decimalMatch[2].length
   }
 
+  // Remove todos os separadores
   valor = valor.replace(/[.,]/g, '')
 
-  if (decimalSeparator) {
-    valor = valor.slice(0, -2) + '.' + valor.slice(-2)
+  // Reinsere o ponto decimal corretamente
+  if (decimalDigits > 0) {
+    valor =
+      valor.slice(0, -decimalDigits) +
+      '.' +
+      valor.slice(-decimalDigits)
   }
 
   return valor
@@ -392,12 +68,36 @@ type RecordsetDb = {
     cliente: string
 }
 
+type CNPJResponse = {
+  razao_social: string
+  descricao_tipo_de_logradouro: string
+  logradouro: string
+  numero: string
+  bairro: string
+  municipio: string
+  uf: string
+  cep: string
+}
+
+type InfoCNAB = {
+  tipoInscricaoFavorecido: string
+  inscricaoFavorecido: string
+  nomeFavorecido: string
+  enderecoFavorecido: string
+  bairroFavorecido: string
+  cidadeFavorecido: string
+  cepFavorecido: string
+  ufFavorecido: string
+  dataPagamentoCNAB: string
+}
+
 const infoFound = z.object({
     nomeArquivo: z.string(),
     validacaoBoleto: z.custom<Boleto>().nullable(),
     clienteTecnoJuris: z.array(z.custom<NodePessoa>()).nullable(),
     registroBancoDados: z.array(z.custom<RecordsetDb>()).nullable(),
-    cpfCnpjEncontrado: z.array(z.string()),
+    cnpjEncontrado: z.string().nullable(),
+    infoCNAB: z.custom<InfoCNAB>().nullable(),
 })
 
 type InfoFound = z.infer<typeof infoFound>
@@ -407,6 +107,21 @@ type FileData = {
     itemId: string,
     name: string,
     downloadUrl: string
+}
+
+const cnpjQueue = new PQueue({
+  interval: 1 * 1000, // 60 segundos
+  intervalCap: 1  // 3 requests
+})
+
+function formatDateCNAB(date: Date) {
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+
+  // console.log(date, `${yyyy}${mm}${dd}`)
+
+  return `${yyyy}${mm}${dd}`
 }
 
 // --- Nova Função para Processamento de Arquivo Único (Paralelizável) ---
@@ -429,6 +144,36 @@ async function processFile(
 ): Promise<InfoFound> {
   const { driveId, itemId, name, downloadUrl } = file
 
+  const parsedNome = parseNomeArquivo(name)
+
+  // console.log(parsedNome)
+
+  if (!parsedNome) {
+    return {
+      nomeArquivo: name,
+      validacaoBoleto: null,
+      clienteTecnoJuris: [],
+      registroBancoDados: [],
+      cnpjEncontrado: null,
+      infoCNAB: null,
+    }
+  }
+
+  const { data, pasta, valor } = parsedNome
+
+  let idPastaProcesso = pasta
+
+  if (![data, pasta, valor].every(v => v?.trim())) {
+    return {
+      nomeArquivo: name,
+      validacaoBoleto: null,
+      clienteTecnoJuris: [],
+      registroBancoDados: [],
+      cnpjEncontrado: null,
+      infoCNAB: null,
+    }
+  }
+
   // console.log('PROCESSANDO:', name)
 
   // 1. Download do PDF
@@ -446,7 +191,8 @@ async function processFile(
   const regexLinhaDigitavel = /\b\d{5}[.\s]?\d{5}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d[.\s]?\d{14}\b/g
   const regexCodigoBarras = /\b\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\b/g
   const regexCodigoBarrasComDV = /\b\d{11}-\d(?:\s+\d{11}-\d){3}\b/g
-  const regexCpfCnpj = /\b(?:\d{3}[.\s]?\d{3}[.\s]?\d{3}[-.\s]?\d{2}|\d{2}[.\s]?\d{3}[.\s]?\d{3}[/.\s]?\d{4}[-.\s]?\d{2})\b/g
+  const regexCnpj = /\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/
+  const regexDataVencimento = /\d{2}\/\d{2}\/\d{4}/
   // OBS: Adaptei a regex do CPF/CNPJ para ser mais robusta, pois a sua original parecia capturar sequências muito longas de 11 ou 13 dígitos.
   
   // 2. Extração de texto
@@ -455,9 +201,9 @@ async function processFile(
   let linhaDigitavel = parsedText.text.match(regexLinhaDigitavel)
   let codigoBarras = parsedText.text.match(regexCodigoBarras)
   let codigoBarrasDv = parsedText.text.match(regexCodigoBarrasComDV)
-  let cpfCnpjEncontrado = parsedText.text.match(regexCpfCnpj)
+  let cnpjEncontrado: string | null | RegExpMatchArray = parsedText.text.match(regexCnpj)
+  let dataVencimento = parsedText.text.match(regexDataVencimento)
 
-  let setCpfCnpj = [...new Set(cpfCnpjEncontrado || [])]
   let aSerValidado = linhaDigitavel || codigoBarras || codigoBarrasDv
 
   if (!aSerValidado) {
@@ -468,9 +214,9 @@ async function processFile(
     linhaDigitavel = textFound.match(regexLinhaDigitavel)
     codigoBarras = textFound.match(regexCodigoBarras)
     codigoBarrasDv = textFound.match(regexCodigoBarrasComDV)
-    cpfCnpjEncontrado = textFound.match(regexCpfCnpj)
+    cnpjEncontrado = textFound.match(regexCnpj)
+    dataVencimento = textFound.match(regexDataVencimento)
 
-    setCpfCnpj = [...new Set(cpfCnpjEncontrado || [])]
     aSerValidado = codigoBarras || linhaDigitavel || codigoBarrasDv
 
     if (!aSerValidado) {
@@ -481,7 +227,8 @@ async function processFile(
         validacaoBoleto: null,
         clienteTecnoJuris: [],
         registroBancoDados: [],
-        cpfCnpjEncontrado: [],
+        cnpjEncontrado: null,
+        infoCNAB: null,
       }
     }
   }
@@ -492,23 +239,40 @@ async function processFile(
   const parsedBoleto = validarBoleto(somenteNumeros)
 
   // 6. Extração de informações do nome do arquivo (pasta e valor)
-  const nomeLimpo = normalize(name).replace('-.PDF', '.PDF').replace('.PDF', '').trim()
-  const lastDashIndex = nomeLimpo.lastIndexOf('-')
-  let idPastaProcesso = nomeLimpo.substring(0, lastDashIndex).trim()
+  // const nomeLimpo = normalize(name).replace('-.PDF', '.PDF').replace('.PDF', '').trim()
+  // const lastDashIndex = nomeLimpo.lastIndexOf('-')
+  // let idPastaProcesso = nomeLimpo.substring(0, lastDashIndex).trim()
 
   // Lógica de normalização de idPastaProcesso (mantida do seu código)
   if (idPastaProcesso.includes('- R')) {
     idPastaProcesso = idPastaProcesso.replace('- R', '').trim()
   }
 
-  if (idPastaProcesso.includes('BRADESCO') || idPastaProcesso.includes('EEP') || idPastaProcesso.includes('NX')) {
+  if (idPastaProcesso.includes('-R')) {
+    idPastaProcesso = idPastaProcesso.replace('-R', '').trim()
+  }
+
+  if (
+    idPastaProcesso.includes('BRADESCO') ||
+    idPastaProcesso.includes('EEP') ||
+    idPastaProcesso.includes('NX') ||
+    idPastaProcesso.includes('BLU') ||
+    idPastaProcesso.includes('LFT') ||
+    (idPastaProcesso.includes('C6') && !idPastaProcesso.includes('BUSCA'))
+  ) {
     const parts = idPastaProcesso.split(/[\s-]/).filter(p => p.trim() !== '')
     if (parts.length >= 2) {
       idPastaProcesso = `${parts[0].trim()} - ${parts[1].trim()}`
     }
   }
 
-  if (idPastaProcesso.includes('ITAU')) {
+  if (idPastaProcesso.includes('C6 BUSCA')) {
+    const parts = idPastaProcesso.split('-').filter(p => p.trim() !== '')
+
+    idPastaProcesso = `${parts[0].trim()} - ${parts[1].trim()}`
+  }
+
+  if (idPastaProcesso.includes('ITAU') ||idPastaProcesso.includes('ITAÚ')) {
     const parts = idPastaProcesso.split(/[\s-]/).filter(p => p.trim() !== '')
     if (parts.length >= 2) {
       idPastaProcesso = `ITAÚ - ${parts[1].trim()}`
@@ -525,7 +289,8 @@ async function processFile(
     idPastaProcesso = `${siglaAT.trim()}  - ${numero.trim()}`
   }
   
-  let valorRaw = nomeLimpo.substring(lastDashIndex + 1).trim()
+  // let valorRaw = nomeLimpo.substring(lastDashIndex + 1).trim()
+  let valorRaw = valor
   valorRaw = valorRaw.replace(/\(.*?\)/g, '').trim()
   const valorFormatado = normalizeValor(valorRaw)
 
@@ -533,25 +298,20 @@ async function processFile(
   const query = `
     SELECT id, cliente, valor
     FROM dw_hmetrix.dbo.eckermann_tecnojuris
-    WHERE pasta = '${idPastaProcesso}' AND valor = ${valorFormatado}
+    WHERE pasta LIKE '%${idPastaProcesso}%' AND valor = ${valorFormatado}
   `
 
   const { recordset } = await db.query<RecordsetDb[]>(query)
 
   if (recordset.length === 0) {
-    // console.log(query, recordset)
+    console.log(query, recordset)
   }
 
   let nodes: NodePessoa[] | null = null
 
-  if (recordset.length > 0) {
-    // 8. Update no Banco de Dados
-    await db.query(`
-      UPDATE dw_hmetrix.dbo.eckermann_tecnojuris
-      SET arquivoBoleto = 'graph://${driveId}/${itemId}'
-      WHERE id = '${recordset[0].id}'
-    `)
+  // let favorecido: Favorecido | null = null
 
+  if (recordset.length > 0) {
     // 9. Consulta GraphQL
     const { data } = await app.axios.post<{
       data: {
@@ -589,14 +349,123 @@ async function processFile(
   }
 
   // console.log('✔ Finalizado arquivo:', name)
+
+  let infoCNAB: InfoCNAB | null = null
+
+  if (!cnpjEncontrado) {
+    cnpjEncontrado = null
+    infoCNAB = null
+  } else {
+    cnpjEncontrado = cnpjEncontrado.toString()
+
+    const cnpjLimpo = cnpjEncontrado.replace(/\D/g, '')
+    // console.log(cnpjEncontrado, cnpjLimpo, name)
+    
+    const {
+      razao_social,
+      descricao_tipo_de_logradouro,
+      logradouro,
+      numero,
+      bairro,
+      municipio,
+      cep,
+      uf
+    } = await cnpjQueue.add(() => buscarCnpj(app, cnpjLimpo))
+
+    const tipoInscricaoFavorecido = "1"
+    const inscricaoFavorecido = cnpjLimpo
+    const nomeFavorecido = razao_social
+    const enderecoFavorecido = `${descricao_tipo_de_logradouro} ${logradouro}, ${numero}`
+    const bairroFavorecido = bairro
+    const cidadeFavorecido = municipio
+    const cepFavorecido = cep
+    const ufFavorecido = uf
+    const dataVencimento = new Date(parsedBoleto.vencimentoComNovoFator2025)
+
+    let dataPagamento = new Date(dataVencimento)
+    dataPagamento.setDate(dataPagamento.getDate() + 1)
+
+    const dataPagamentoCNAB = formatDateCNAB(dataPagamento)
+
+    infoCNAB = {
+      tipoInscricaoFavorecido,
+      inscricaoFavorecido,
+      nomeFavorecido,
+      enderecoFavorecido,
+      bairroFavorecido,
+      cidadeFavorecido,
+      cepFavorecido,
+      ufFavorecido,
+      dataPagamentoCNAB,
+    }
+    
+
+    if (recordset.length > 0) {
+      const idRegistro = recordset[0].id
+
+      const req = db.request()
+
+      req.input('id', sql.VarChar(50), idRegistro)
+
+      req.input('tipoInscricaoFavorecido', sql.Int, tipoInscricaoFavorecido)
+      req.input('inscricaoFavorecido', sql.VarChar(255), inscricaoFavorecido)
+      req.input('nomeFavorecido', sql.NVarChar(255), nomeFavorecido)
+
+      req.input('enderecoFavorecido', sql.NVarChar(255), enderecoFavorecido)
+      req.input('bairroFavorecido', sql.NVarChar(255), bairroFavorecido)
+      req.input('cidadeFavorecido', sql.NVarChar(255), cidadeFavorecido)
+      req.input('ufFavorecido', sql.NVarChar(255), ufFavorecido)
+      req.input('cepFavorecido', sql.NVarChar(255), cepFavorecido.replace(/\D/g, ''))
+
+      req.input('dataPagamento', sql.NVarChar(255), dataPagamentoCNAB)
+
+      req.input('tipoBoleto', sql.NVarChar(255), parsedBoleto.tipoBoleto)
+      req.input('linhaDigitavel', sql.NVarChar(255), parsedBoleto.linhaDigitavel)
+      req.input('codigoBarras', sql.NVarChar(255), parsedBoleto.codigoBarras)
+
+      await req.query(`
+        UPDATE dw_hmetrix.dbo.eckermann_tecnojuris
+        SET
+          tipoInscricaoFavorecido = @tipoInscricaoFavorecido,
+          inscricaoFavorecido = @inscricaoFavorecido,
+          nomeFavorecido = @nomeFavorecido,
+          enderecoFavorecido = @enderecoFavorecido,
+          bairroFavorecido = @bairroFavorecido,
+          cidadeFavorecido = @cidadeFavorecido,
+          ufFavorecido = @ufFavorecido,
+          cepFavorecido = @cepFavorecido,
+          dataPagamento = @dataPagamento,
+          tipoBoleto = @tipoBoleto,
+          linhaDigitavel = @linhaDigitavel,
+          codigoBarras = @codigoBarras
+        WHERE id = @id
+      `)
+    }
+
+    // console.log(parsedBoleto.vencimentoApos22022025, parsedBoleto.vencimento)
+  }
   
   return {
     nomeArquivo: name,
     validacaoBoleto: parsedBoleto,
     clienteTecnoJuris: nodes,
     registroBancoDados: recordset,
-    cpfCnpjEncontrado: setCpfCnpj,
+    cnpjEncontrado,
+    infoCNAB,
   }
+}
+
+const cnpjCache = new Map<string, any>()
+
+async function buscarCnpj(app: FastifyZodTypedInstance, cnpj: string): Promise<CNPJResponse> {
+  if (cnpjCache.has(cnpj)) {
+    return cnpjCache.get(cnpj)
+  }
+
+  const { data } = await app.axios.get<CNPJResponse>(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
+
+  cnpjCache.set(cnpj, data)
+  return data
 }
 
 // --- Função Principal (Refatorada) ---
@@ -627,14 +496,14 @@ export function boletosTecnoJuris(app: FastifyZodTypedInstance) {
     async (request, reply) => {
       const { files } = request.body
 
-      const filteredFiles = files.filter(({ name }) => 
-        !normalize(name).includes('AUTORIZACAO')
-        && !normalize(name).includes('PIC')
-        && !normalize(name).includes('PETICAO')
-      )
+      // const filteredFiles = files.filter(({ name }) => 
+      //   !normalize(name).includes('AUTORIZACAO')
+      //   && !normalize(name).includes('PIC')
+      //   && !normalize(name).includes('PETICAO')
+      // )
 
       // Se não houver arquivos, retorna rapidamente
-      if (filteredFiles.length === 0) {
+      if (files.length === 0) {
         return reply.send({ infoBoletos: [] })
       }
 
@@ -684,10 +553,10 @@ export function boletosTecnoJuris(app: FastifyZodTypedInstance) {
         // const arrayInfo: InfoFound[] = await Promise.all(processingPromises)
 
         // limite de concorrência — ajuste conforme necessário
-        const limit = pLimit(4)
+        const limit = pLimit(3)
 
         const arrayInfo = await Promise.all(
-          filteredFiles.map(file =>
+          files.map(file =>
             limit(() =>
               processFile(file, db, jwt_token, accessTokenGraph, app)
             )

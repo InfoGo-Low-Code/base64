@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { env } from '@/env'
+import { normalize } from '@/utils/normalize'
 
 const filesResponse = z.object({
   name: z.string(),
@@ -106,7 +107,24 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           }
         )
 
-        const formattedFiles: FilesResponse[] = files.map((file) => ({
+        const filteredFiles = files.filter(({ name }) => {
+          const normalized = normalize(name)
+
+          // exclui lixos conhecidos
+          if (
+            normalized.includes('AUTORIZACAO') ||
+            normalized.includes('PIC') ||
+            normalized.includes('PETICAO') ||
+            normalized.includes('PARECER')
+          ) {
+            return false
+          }
+
+          // aceita se começar com data
+          return /^\d{2}\.\d{2}\.\d{4}/.test(name)
+        })
+
+        const formattedFiles: FilesResponse[] = filteredFiles.map((file) => ({
           driveId,
           name: file.name,
           itemId: file.id,

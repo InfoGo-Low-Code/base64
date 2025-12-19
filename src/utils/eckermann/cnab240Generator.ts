@@ -251,8 +251,8 @@ export class CNAB240Generator {
     // P.059-082: Identificação do Pagamento (Brancos para começar)
     lineP += pad('', 24, ' ', 'L') 
 
-    lineP += pad('1', 1, '0', 'R') // P.083-083: Tipo de Inscrição do Favorecido (1-CPF, 2-CNPJ)
-    lineP += pad('11111111111111', 14, '0', 'R') // P.084-097: Nro Inscrição do Favorecido (CNPJ/CPF)
+    lineP += pad(record.tipoInscricaoFavorecido, 1, '0', 'R') // P.083-083: Tipo de Inscrição do Favorecido (1-CPF, 2-CNPJ)
+    lineP += pad(record.inscricaoFavorecido.replace(/\D/g, ''), 14, '0', 'R') // P.084-097: Nro Inscrição do Favorecido (CNPJ/CPF)
 
     // P.098-127: Nome do Favorecido (30 pos) - USANDO TRUNCAMENTO CONTROLADO
     lineP += pad(descricao30, 30, ' ', 'L') 
@@ -263,11 +263,11 @@ export class CNAB240Generator {
 
     lineP += pad('000001', 6, '0', 'R') // P.153-158: Nro do Documento / Nro da Fatura
 
-    lineP += pad('0', 2, '0', 'R') // P.159-160: Código da Moeda (09 - Real)
+    lineP += pad('09', 2, '0', 'R') // P.159-160: Código da Moeda (09 - Real)
     lineP += formatCNABNumber(1.0, 8, 5) // P.161-168: Quantidade da Moeda (1,00000)
     
     // P.169-176: Data de Pagamento (Data Prevista)
-    lineP += formatDate(this.today) 
+    lineP += pad(record.dataPagamento ?? formatDate(this.today), 8, '0', 'R')
     
     lineP += pad('000000000000000', 15, '0', 'R') // P.177-191: Valor Real da Moeda (0)
 
@@ -281,6 +281,8 @@ export class CNAB240Generator {
     lineP += pad('', 28, ' ', 'L') // P.213-240: Brancos
 
     if (lineP.length !== 240) {
+        console.log('Segmento P length:', lineP.length)
+        console.log(lineP)
         throw new Error(`Segmento P: Tamanho incorreto (${lineP.length})`)
     }
     detailRecords.push(lineP)
@@ -297,23 +299,23 @@ export class CNAB240Generator {
 
     lineQ += pad('01', 2, '0', 'R') // P.016-017: Código de Movimento (01 - Entrada Confirmada)
 
-    lineQ += pad('1', 1, '0', 'R') // P.018-018: Tipo de Inscrição (1-CPF, 2-CNPJ)
+    lineQ += pad(record.tipoInscricaoFavorecido, 1, '0', 'R')
     // CORREÇÃO CRÍTICA: P.019-033 tem 15 posições, estava com 14.
-    lineQ += pad('111111111111111', 15, '0', 'R') // P.019-033: Nro Inscrição do Favorecido (CNPJ/CPF)
+    lineQ += pad(record.inscricaoFavorecido, 15, '0', 'R')
 
     // P.034-073: Nome do Favorecido (40 pos) - USANDO TRUNCAMENTO CONTROLADO
     lineQ += pad(descricao40, 40, ' ', 'L') 
 
     // P.074-113: Endereço (Rua, Número)
-    lineQ += pad('Rua Exemplo, 123', 40, ' ', 'L')
+    lineQ += pad(record.enderecoFavorecido.substring(0, 40), 40, ' ', 'L')
     // P.114-128: Bairro
-    lineQ += pad('Centro', 15, ' ', 'L')
+    lineQ += pad(record.bairroFavorecido.substring(0, 15), 15, ' ', 'L')
     // P.129-148: Cidade
-    lineQ += pad('Sao Paulo', 20, ' ', 'L')
+    lineQ += pad(record.cidadeFavorecido.substring(0, 20), 20, ' ', 'L')
     // P.149-156: CEP (8 posições: 00000000)
-    lineQ += pad('01001000', 8, '0', 'R')
+    lineQ += pad(record.cepFavorecido.replace(/\D/g, ''), 8, '0', 'R')
     // P.157-158: UF
-    lineQ += pad('SP', 2, ' ', 'L')
+    lineQ += pad(record.ufFavorecido, 2, ' ', 'L')
 
     lineQ += pad('', 76, ' ', 'L') // P.159-234: Brancos
     lineQ += pad('000000', 6, '0', 'R') // P.235-240: Uso Exclusivo FEBRABAN/CNAB (Brancos)

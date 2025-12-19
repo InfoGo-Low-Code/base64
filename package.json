@@ -33,6 +33,7 @@
     "mime-types": "^3.0.1",
     "mssql": "^11.0.1",
     "p-limit": "^7.2.0",
+    "p-queue": "^9.0.1",
     "pdf-parse": "^2.4.5",
     "postgres": "^3.4.7",
     "pptxgenjs": "^4.0.1",
