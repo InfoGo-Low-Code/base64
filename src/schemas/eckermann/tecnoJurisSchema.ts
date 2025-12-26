@@ -36,6 +36,7 @@ export const tecnoJurisSchema = z.object({
   natureza: z.string().optional(), // ✅
   efetivado: z.number().optional(), // ✅
   faturado: z.number().optional(), // ✅
+  codigoBarras: z.string(),
 })
 
 export type TecnoJurisSchema = z.infer<typeof tecnoJurisSchema>
