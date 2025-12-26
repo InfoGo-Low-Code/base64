@@ -1,8 +1,8 @@
 import { TecnoJurisSchema } from '@/schemas/eckermann/tecnoJurisSchema'
 
 const BANCO = '001'
-const NOME_EMPRESA = 'ECKERMANN YAEGASHI E SANTOS'
-const CNPJ_EMPRESA = '99999999999999'
+const NOME_EMPRESA = 'ECKERMANN E SANTOS SOCIEDADE DE ADVOGADOS'
+const CNPJ_EMPRESA = '11252148000130'
 
 function pad(v: any, len: number, char = ' ', left = true) {
   const s = String(v ?? '')
