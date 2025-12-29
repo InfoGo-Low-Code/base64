@@ -23,6 +23,7 @@ import { invistaiiRoutes } from './controllers/invistaii/invistaii.routes'
 import { audisaRoutes } from './controllers/audisa/audisa.routes'
 import { fileExtensionConverter } from './controllers/fileExtensionConverter'
 import { covabraRoutes } from './controllers/covabra/covabra.routes'
+import { biogenRoutes } from './controllers/biogen/biogen.routes'
 
 export const app = fastify({
   bodyLimit: 5 * 1024 * 1024
@@ -53,3 +54,4 @@ app.register(invistaiiRoutes)
 app.register(audisaRoutes)
 app.register(fileExtensionConverter)
 app.register(covabraRoutes)
+app.register(biogenRoutes)
