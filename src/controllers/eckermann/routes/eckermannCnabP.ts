@@ -47,6 +47,7 @@ export function eckermannCnabP(app: FastifyZodTypedInstance) {
           dataPagamento
         FROM dbo.eckermann_tecnojuris
         WHERE codigoBarras IS NOT NULL
+          AND efetivado = 0
       `)
 
       if (!recordset.length) {
