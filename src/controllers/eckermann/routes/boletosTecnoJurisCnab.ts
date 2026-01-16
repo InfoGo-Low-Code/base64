@@ -2,12 +2,15 @@ import { z } from 'zod'
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { PDFParse } from 'pdf-parse'
 import { validarBoleto, Boleto } from '@mrmgomes/boleto-utils'
-import { ocrPdfToText } from '@/utils/eckermann/ocrPdfToText'
+import { ocrPdfToText } from '@/utils/ocrPdfToText'
 import pLimit from 'p-limit'
 import { FastifyInstance } from 'fastify'
 import { getEckermannConnection } from '@/database/eckermann'
 import sql, { ConnectionPool } from 'mssql'
 import { parseNomeArquivo } from '@/schemas/eckermann/parseNomeArquivo'
+import { proximoDiaUtil } from '@/utils/eckermann/proximoDiaUtil'
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 // =======================
 // Schemas
@@ -17,6 +20,7 @@ const infoFound = z.object({
   nomeArquivo: z.string(),
   boleto: z.custom<Boleto>().nullable(),
   dataPagamento: z.string().nullable(),
+  beneficiario: z.string().nullable(),
 })
 
 type InfoFound = z.infer<typeof infoFound>
@@ -28,30 +32,7 @@ type FileData = {
   downloadUrl: string
 }
 
-// =======================
-// Utilitário: próximo dia útil
-// =======================
-function proximoDiaUtil(data: string): Date {
-  const dataSemHorario = data.split('T')[0]
-  const [year, month, day] = dataSemHorario.split('-').map(Number)
-
-  // cria data LOCAL
-  const d = new Date(year, month - 1, day)
-
-  // normaliza para meio-dia (anti-fuso)
-  d.setHours(12, 0, 0, 0)
-
-  // +1 dia
-  d.setDate(d.getDate() + 1)
-
-  // pula sábado/domingo
-  while (d.getDay() === 0 || d.getDay() === 6) {
-    d.setDate(d.getDate() + 1)
-  }
-
-  return d
-}
-
+let roda = true
 
 function normalizeValor(valor: string) {
   valor = valor.trim()
@@ -107,6 +88,7 @@ async function processFile(
         nomeArquivo: name,
         boleto: null,
         dataPagamento: null,
+        beneficiario: null,
       }
     }
   
@@ -119,6 +101,7 @@ async function processFile(
         nomeArquivo: name,
         boleto: null,
         dataPagamento: null,
+        beneficiario: null
       }
     }
   
@@ -134,12 +117,33 @@ async function processFile(
         }
       }
     )
+
+    const { data: dataFile } = await app.axios.post<{
+      Result: {
+        text: string
+      }
+    }>(
+      'https://my-space-v-wco.api.integrasky.cloud/weCR3B7Wvd',
+      {
+        PDF: downloadUrl,
+        Prompt: `Você é um especialista em boletos bancários brasileiros (FEBRABAN). A seguir está o arquivo de um boleto em PDF (via arquivo). Seu objetivo é identificar e retornar APENAS o NOME DO BENEFICIÁRIO DO BOLETO (quem recebe o pagamento). REGRAS IMPORTANTES: Beneficiário NÃO é o pagador, sacado, cliente ou devedor; Beneficiário também pode aparecer como Cedente, Favorecido ou termos equivalentes; Ignore nomes de pessoas físicas quando estiverem claramente identificadas como pagador/sacado; O nome do beneficiário normalmente aparece: próximo de rótulos como: Beneficiário, Cedente, Favorecido ou imediatamente acima de um CNPJ; Caso existam múltiplos nomes no documento, escolha aquele que claramente representa a empresa ou entidade que EMITIU o boleto. Retorne o nome exatamente como aparece no boleto, sem inventar ou corrigir. Se não for possível identificar com segurança, retorne: null. FORMATO DA RESPOSTA: Retorne apenas o nome encontrado`,
+        Nome_Arquivo: name
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    )
+
+    const beneficiario = dataFile.Result.text
+
+    await sleep(10000)
   
     // Regexes para validação e extração (mantidas do seu código)
     const regexLinhaDigitavel = /\b\d{5}[.\s]?\d{5}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d[.\s]?\d{14}\b/g
     const regexCodigoBarras = /\b\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\b/g
     const regexCodigoBarrasComDV = /\b\d{11}-\d(?:\s+\d{11}-\d){3}\b/g
-    // OBS: Adaptei a regex do CPF/CNPJ para ser mais robusta, pois a sua original parecia capturar sequências muito longas de 11 ou 13 dígitos.
     
     // 2. Extração de texto
     let parsedText = await new PDFParse({ data: pdfBuffer }).getText()
@@ -168,6 +172,7 @@ async function processFile(
           nomeArquivo: name,
           boleto: null,
           dataPagamento: null,
+          beneficiario,
         }
       }
     }
@@ -257,13 +262,17 @@ async function processFile(
         .input('codigoBarras', sql.NVarChar(255), parsedBoleto.codigoBarras)
         .input('linhaDigitavel', sql.NVarChar(255), parsedBoleto.linhaDigitavel)
         .input('dataPagamento', sql.Date, new Date(dataPagamento))
+        .input('nomeBeneficiario', sql.NVarChar(255), beneficiario)
+        .input('dataVencimentoBoleto', sql.Date, new Date(parsedBoleto.vencimentoComNovoFator2025))
         .query(`
           UPDATE dbo.eckermann_tecnojuris
           SET
             codigoBarras = @codigoBarras,
             linhaDigitavel = @linhaDigitavel,
             dataPagamento = @dataPagamento,
-            statusPagamento = 'PENDENTE'
+            statusPagamento = 'PENDENTE',
+            nomeBeneficiario = @nomeBeneficiario,
+            dataVencimentoBoleto = @dataVencimentoBoleto
           WHERE id = @id
         `)
       
@@ -271,6 +280,7 @@ async function processFile(
         nomeArquivo: name,
         boleto: parsedBoleto,
         dataPagamento: dataPagamento.toISOString().substring(0, 10),
+        beneficiario,
       }
     }
 
@@ -278,6 +288,7 @@ async function processFile(
       nomeArquivo: name,
       boleto: parsedBoleto,
       dataPagamento: null,
+      beneficiario,
     }
 }
 

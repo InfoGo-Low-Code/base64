@@ -2,15 +2,39 @@ import { z } from 'zod'
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { env } from '@/env'
 import { normalize } from '@/utils/normalize'
+import { proximoDiaUtil } from '@/utils/eckermann/proximoDiaUtil'
 
 const filesResponse = z.object({
   name: z.string(),
   itemId: z.string(),
   driveId: z.string(),
-  downloadUrl: z.string(),
+  downloadUrl: z.string().optional(),
 })
 
 type FilesResponse = z.infer<typeof filesResponse>
+
+function numberMonthToName(numberMonth: number) {
+  const months = [
+    'JANEIRO',
+    'FEVEREIRO',
+    'MARÇO',
+    'ABRIL',
+    'MAIO',
+    'JUNHO',
+    'JULHO',
+    'AGOSTO',
+    'SETEMBRO',
+    'OUTUBRO',
+    'NOVEMBRO',
+    'DEZEMBRO',
+  ]
+
+  if (numberMonth < 1 || numberMonth > 12) {
+    throw new Error(`Mês inválido: ${numberMonth}`)
+  }
+
+  return months[numberMonth - 1]
+}
 
 export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
   app.get(
@@ -90,13 +114,21 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
 
         // console.log({id, folderId})
 
+        const dataAtual: string | Date = new Date()
+        const dataAtualDate = `${dataAtual.getFullYear()}-${String(dataAtual.getMonth() + 1).padStart(2, '0')}-${String(dataAtual.getDate()).padStart(2, '0')}T00:00:00.000Z`
+
+        const proxDiaUtil = proximoDiaUtil(dataAtualDate)
+
+        const anoAtual = proxDiaUtil.getFullYear().toString()
+        const mesAtual = proxDiaUtil.getMonth() + 1
+
         const { data: {
-          value: files
+          value: filesMain
         } } = await app.axios.get<{
           value: {
             id: string
             name: string
-            "@microsoft.graph.downloadUrl": string
+            "@microsoft.graph.downloadUrl": string | undefined
           }[]
         }>(
           `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}/children`,
@@ -107,7 +139,75 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           }
         )
 
-        const filteredFiles = files.filter(({ name }) => {
+        const idFolderAnoAtual = filesMain.find(({ name }) => name === anoAtual)?.id
+
+        console.log({ idFolderAnoAtual })
+
+        const { data: {
+          value: filesAnoAtual
+        } } = await app.axios.get<{
+          value: {
+            id: string
+            name: string
+            "@microsoft.graph.downloadUrl": string | undefined
+          }[]
+        }>(
+          `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${idFolderAnoAtual}/children`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`
+            }
+          }
+        )
+
+        const mesAtualString = numberMonthToName(mesAtual)
+
+        const idFolderMesAtual = filesAnoAtual.find(({ name }) => name === mesAtualString)?.id
+
+        console.log({ idFolderMesAtual })
+
+        const { data: {
+          value: filesMesAtual
+        } } = await app.axios.get<{
+          value: {
+            id: string
+            name: string
+            "@microsoft.graph.downloadUrl": string | undefined
+          }[]
+        }>(
+          `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${idFolderMesAtual}/children`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`
+            }
+          }
+        )
+
+        const proxDiaUtilString = '12.01.2026'
+        // const proxDiaUtilString = `${proxDiaUtil.getDate().toString().padStart(2, '0')}.${(proxDiaUtil.getMonth() + 1).toString().padStart(2, '0')}.${proxDiaUtil.getFullYear()}`
+
+        const idFolderProxDiaUtil = filesMesAtual.find(({ name }) => name === proxDiaUtilString)?.id
+
+        console.log({ idFolderProxDiaUtil })
+
+        const { data: {
+          value: filesProxDiaUtil
+        } } = await app.axios.get<{
+          value: {
+            id: string
+            name: string
+            "@microsoft.graph.downloadUrl": string | undefined
+          }[]
+        }>(
+          `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${idFolderProxDiaUtil}/children`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`
+            }
+          }
+        )
+
+        const filteredFiles = filesProxDiaUtil.filter(({ name }) => {
           const normalized = normalize(name)
 
           // exclui lixos conhecidos
@@ -121,7 +221,7 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           }
 
           // aceita se começar com data
-          return /^\d{2}\.\d{2}\.\d{4}/.test(name)
+          return normalized
         })
 
         const formattedFiles: FilesResponse[] = filteredFiles.map((file) => ({

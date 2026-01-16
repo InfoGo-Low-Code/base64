@@ -44,11 +44,16 @@ export function eckermannCnabP(app: FastifyZodTypedInstance) {
           valor,
           data,
           codigoBarras,
-          dataPagamento
+          dataPagamento,
+          dataVencimentoBoleto,
+          nomeBeneficiario
         FROM dbo.eckermann_tecnojuris
         WHERE codigoBarras IS NOT NULL
-          AND efetivado = 0
+          AND nomeBeneficiario IS NOT NULL
+          -- AND efetivado = 0
       `)
+
+      console.log(recordset.length)
 
       if (!recordset.length) {
         return reply.badRequest('Nenhum boleto disponível para CNAB')

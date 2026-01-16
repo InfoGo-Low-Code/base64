@@ -5,12 +5,6 @@ export const tecnoJurisSchema = z.object({
   descricao: z.string(), // Texto da SUIT e Processo (Será truncado) ✅
   valor: z.number(), // Valor do Pagamento ✅
 
-  // --- Dados do Favorecido (Conta de Destino) ---
-  bancoFavorecido: z.string().length(3), // Cód. Banco (ex: '341')
-  agenciaFavorecido: z.string().length(4), // Agência (ex: '0001')
-  contaFavorecido: z.string().max(12), // Conta Corrente
-  dvContaFavorecido: z.string().length(1), // DV da Conta
-
   // --- Dados de Identificação e Endereço ---
   tipoInscricaoFavorecido: z.number().int().min(1).max(2), // 1=CPF, 2=CNPJ ✅
   inscricaoFavorecido: z.string().max(15), // CPF/CNPJ completo ✅
@@ -36,7 +30,9 @@ export const tecnoJurisSchema = z.object({
   natureza: z.string().optional(), // ✅
   efetivado: z.number().optional(), // ✅
   faturado: z.number().optional(), // ✅
-  codigoBarras: z.string(),
+  codigoBarras: z.string(), // ✅
+  dataVencimentoBoleto: z.string(), // ✅
+  nomeBeneficiario: z.string(), // 
 })
 
 export type TecnoJurisSchema = z.infer<typeof tecnoJurisSchema>
