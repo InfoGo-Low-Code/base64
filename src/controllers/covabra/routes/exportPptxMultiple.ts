@@ -243,33 +243,7 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
             )
           })
         } else if (tipoGrafico !== 'table') {
-          const slide = pptx.addSlide()
-
-          slide.addImage({
-            path: './src/images/logoCovabra.png',
-            x: '90%',
-            y: 0.125,
-            w: 0.5,
-            h: 0.5,
-          })
-
-          slide.addText([
-            { text: `Data da Consulta: ${dataConsulta}\n`, options: { fontSize: 9, bold: true, color: "000000" } },
-            { text: `Usuário: ${usuario}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-            { text: `Marca: ${marca}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-            { text: `Categorias: ${categorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-            { text: `Subcategorias: ${subcategorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-            { text: `Período Inicial: ${periodoInicial}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-            { text: `Período Final: ${periodoFinal}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
-          ], {
-            x: 0.5,
-            y: 0.25,
-            fontFace: "Montserrat",
-            h: "20%",
-            valign: "top",
-            lineSpacingMultiple: 1.25,
-            margin: 0,
-          })
+          const paginas = chunkMetricas(metricas!, 3)
 
           const baseColors =
             titulo === 'Estoque do fornecedor em quantidade'
@@ -278,96 +252,209 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
                 ? ['FFC000']
                 : ['00B0F0']
 
-          if (titulo === 'Estoque do fornecedor em quantidade' || titulo === 'Estoque do fornecedor em valor' || titulo === 'Preço médio do fornecedor (R$)') {
-            slide.addChart(
-              tipoGrafico,
-              metricas!.map((m) => ({
-                name: m.legenda,
-                labels,
-                values: m.valores,
-              })),
-              {
-                x: 0.5,
-                y: 1.35,
-                w: "90%",
-                h: "70%",
+          paginas.forEach((paginaMetricas, pageIndex) => {
+            const slide = pptx.addSlide()
 
-                chartColors: buildChartColors(baseColors, metricas!.length),
+            // ======================
+            // LOGO
+            // ======================
+            slide.addImage({
+              path: './src/images/logoCovabra.png',
+              x: '90%',
+              y: 0.125,
+              w: 0.5,
+              h: 0.5,
+            })
 
-                // Fontes
-                catAxisLabelFontSize: 10,
-                catAxisLabelFontFace: "Montserrat",
-                valAxisLabelFontFace: "Montserrat",
-                legendFontFace: "Montserrat",
-                titleFontFace: "Montserrat",
+            // ======================
+            // HEADER
+            // ======================
+            slide.addText([
+              { text: `Data da Consulta: ${dataConsulta}\n`, options: { fontSize: 9, bold: true, color: "000000" } },
+              { text: `Usuário: ${usuario}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+              { text: `Marca: ${marca}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+              { text: `Categorias: ${categorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+              { text: `Subcategorias: ${subcategorias}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+              { text: `Período Inicial: ${periodoInicial}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+              { text: `Período Final: ${periodoFinal}\n`, options: { fontSize: 7, bold: true, color: "3C3C3C" } },
+            ], {
+              x: 0.5,
+              y: 0.25,
+              fontFace: "Montserrat",
+              h: "20%",
+              valign: "top",
+              lineSpacingMultiple: 1.25,
+              margin: 0,
+            })
 
-                // Legenda e título
-                showLegend: false,
-                legendPos: "t",
-                title: titulo,
-                showTitle: true,
-                titleFontSize: 14,
-                titleBold: true,
+            // ======================
+            // GRÁFICO
+            // ======================
+            const isSingleMetric = paginaMetricas.length === 1
 
-                lineSmooth: true,
+            if (isSingleMetric) {
+              slide.addChart(
+                tipoGrafico,
+                [
+                  {
+                    name: paginaMetricas[0].legenda,
+                    labels,
+                    values: paginaMetricas[0].valores,
+                  },
+                ],
+                {
+                  x: 0.5,
+                  y: 1.35,
+                  w: "90%",
+                  h: "70%",
 
-                showValue: true,
-                dataLabelFontFace: "Montserrat",
-                dataLabelFontSize: 10,
-                dataLabelColor: "000000",
-                dataLabelFormatCode: '#,##0',
+                  chartColors: titulo === 'Estoque do fornecedor em quantidade'
+                    ? ['ED0000']
+                    : titulo === 'Estoque do fornecedor em valor'
+                      ? ['FFC000']
+                      : ['00B0F0'],
 
-                // pequenas melhorias visuais
-                valGridLine: { style: "none" },
-              } 
-            )
-          } else {
-            slide.addChart(
-              tipoGrafico,
-              metricas!.map((m) => ({
-                name: m.legenda,
-                labels,
-                values: m.valores,
-              })),
-              {
-                x: 0.5,
-                y: 1.35,
-                w: "90%",
-                h: "70%",
+                  // Fontes
+                  catAxisLabelFontSize: 10,
+                  catAxisLabelFontFace: "Montserrat",
+                  valAxisLabelFontFace: "Montserrat",
+                  legendFontFace: "Montserrat",
+                  titleFontFace: "Montserrat",
 
-                chartColors: buildChartColors(
-                  ["4CC884", "D68B58"],
-                  metricas!.length
-                ),
+                  // Legenda e título
+                  showLegend: true,
+                  legendPos: "t",
+                  title: titulo,
+                  showTitle: true,
+                  titleFontSize: 14,
+                  titleBold: true,
 
-                // Fontes
-                catAxisLabelFontSize: 10,
-                catAxisLabelFontFace: "Montserrat",
-                valAxisLabelFontFace: "Montserrat",
-                legendFontFace: "Montserrat",
-                titleFontFace: "Montserrat",
+                  lineSmooth: true,
 
-                // Legenda e título
-                showLegend: true,
-                legendPos: "t",
-                title: titulo,
-                showTitle: true,
-                titleFontSize: 14,
-                titleBold: true,
+                  showValue: true,
+                  dataLabelFontFace: "Montserrat",
+                  dataLabelFontSize: 10,
+                  dataLabelColor: "000000",
+                  dataLabelFormatCode: '#,##0',
 
-                lineSmooth: true,
+                  // pequenas melhorias visuais
+                  valGridLine: { style: "none" },
+                } 
+              )
+            } else {
+              slide.addChart(
+                tipoGrafico,
+                paginaMetricas.map((m) => ({
+                  name: m.legenda,
+                  labels,
+                  values: m.valores,
+                })),
+                {
+                  x: 0.5,
+                  y: 1.35,
+                  w: "90%",
+                  h: "70%",
 
-                showValue: true,
-                dataLabelFontFace: "Montserrat",
-                dataLabelFontSize: 10,
-                dataLabelColor: "000000",
-                dataLabelFormatCode: '#,##0.0"%"',
+                  chartColors:
+                    titulo === 'Estoque do fornecedor em quantidade' ||
+                    titulo === 'Estoque do fornecedor em valor' ||
+                    titulo === 'Preço médio do fornecedor (R$)'
+                      ? buildChartColors(baseColors, paginaMetricas.length)
+                      : buildChartColors(["4CC884", "D68B58"], paginaMetricas.length),
 
-                // pequenas melhorias visuais
-                valGridLine: { style: "none" },
-              } 
-            )
-          }
+                  // Fontes
+                  catAxisLabelFontSize: 10,
+                  catAxisLabelFontFace: "Montserrat",
+                  valAxisLabelFontFace: "Montserrat",
+                  legendFontFace: "Montserrat",
+                  titleFontFace: "Montserrat",
+
+                  // Legenda e título
+                  showLegend:
+                    !(titulo === 'Estoque do fornecedor em quantidade' ||
+                      titulo === 'Estoque do fornecedor em valor' ||
+                      titulo === 'Preço médio do fornecedor (R$)') && paginaMetricas.length > 1,
+
+                  legendPos: "t",
+                  title: titulo,
+                  showTitle: true,
+                  titleFontSize: 14,
+                  titleBold: true,
+
+                  lineSmooth: true,
+
+                  showValue: true,
+                  dataLabelFontFace: "Montserrat",
+                  dataLabelFontSize: 10,
+                  dataLabelColor: "000000",
+
+                  dataLabelFormatCode:
+                    titulo === 'Estoque do fornecedor em quantidade' ||
+                    titulo === 'Estoque do fornecedor em valor'
+                      ? '#,##0'
+                      : '#,##0.0"%"',
+
+                  valGridLine: { style: "none" },
+                }
+              )
+            }
+
+            // slide.addChart(
+            //   tipoGrafico,
+            //   paginaMetricas.map((m) => ({
+            //     name: m.legenda,
+            //     labels,
+            //     values: m.valores,
+            //   })),
+            //   {
+            //     x: 0.5,
+            //     y: 1.35,
+            //     w: "90%",
+            //     h: "70%",
+
+            //     chartColors:
+            //       titulo === 'Estoque do fornecedor em quantidade' ||
+            //       titulo === 'Estoque do fornecedor em valor' ||
+            //       titulo === 'Preço médio do fornecedor (R$)'
+            //         ? buildChartColors(baseColors, paginaMetricas.length)
+            //         : buildChartColors(["4CC884", "D68B58"], paginaMetricas.length),
+
+            //     // Fontes
+            //     catAxisLabelFontSize: 10,
+            //     catAxisLabelFontFace: "Montserrat",
+            //     valAxisLabelFontFace: "Montserrat",
+            //     legendFontFace: "Montserrat",
+            //     titleFontFace: "Montserrat",
+
+            //     // Legenda e título
+            //     showLegend:
+            //       !(titulo === 'Estoque do fornecedor em quantidade' ||
+            //         titulo === 'Estoque do fornecedor em valor' ||
+            //         titulo === 'Preço médio do fornecedor (R$)') && paginaMetricas.length > 1,
+
+            //     legendPos: "t",
+            //     title: titulo,
+            //     showTitle: true,
+            //     titleFontSize: 14,
+            //     titleBold: true,
+
+            //     lineSmooth: true,
+
+            //     showValue: true,
+            //     dataLabelFontFace: "Montserrat",
+            //     dataLabelFontSize: 10,
+            //     dataLabelColor: "000000",
+
+            //     dataLabelFormatCode:
+            //       titulo === 'Estoque do fornecedor em quantidade' ||
+            //       titulo === 'Estoque do fornecedor em valor'
+            //         ? '#,##0'
+            //         : '#,##0.0"%"',
+
+            //     valGridLine: { style: "none" },
+            //   }
+            // )
+          })
         } else {
           // ========================
           // ÍCONES (paths locais)
@@ -677,7 +764,7 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
 
         return reply.internalServerError(error.message)
       } finally {
-        // unlinkSync(filePath)
+        unlinkSync(filePath)
       }
     },
   )
