@@ -400,7 +400,7 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
                     titulo === 'Preço médio do fornecedor (R$)' ||
                     titulo === 'Evolução em ponto percentual da presença' ||
                     titulo === 'Período médio de estocagem - PME (dias)' ||
-                    titulo === 'Evolução  do PME (dias)' ? '#,##0.0' : '#,##0.0"%"',
+                    titulo === 'Evolução do PME (dias)' ? '#,##0.0' : '#,##0.0"%"',
 
                   valGridLine: { style: "none" },
                 }
