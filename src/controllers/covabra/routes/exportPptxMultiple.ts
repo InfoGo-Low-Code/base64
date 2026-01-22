@@ -237,7 +237,7 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
                 dataLabelFontBold: true,
 
                 // 💡 Customização do label:
-                dataLabelFormatCode: '#,##0.0',
+                dataLabelFormatCode: '#,##0.0"%"',
                 valGridLine: { style: "none" },
               }
             )
@@ -335,7 +335,10 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
                   dataLabelFontFace: "Montserrat",
                   dataLabelFontSize: 10,
                   dataLabelColor: "000000",
-                  dataLabelFormatCode: '#,##0',
+                  dataLabelFormatCode:
+                    titulo === 'Estoque do fornecedor em quantidade' ||
+                    titulo === 'Estoque do fornecedor em valor' ||
+                    titulo === 'Preço médio do fornecedor (R$)' ? '#,##0' : '#,##0.0"%"',
 
                   // pequenas melhorias visuais
                   valGridLine: { style: "none" },
@@ -398,62 +401,6 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
                 }
               )
             }
-
-            // slide.addChart(
-            //   tipoGrafico,
-            //   paginaMetricas.map((m) => ({
-            //     name: m.legenda,
-            //     labels,
-            //     values: m.valores,
-            //   })),
-            //   {
-            //     x: 0.5,
-            //     y: 1.35,
-            //     w: "90%",
-            //     h: "70%",
-
-            //     chartColors:
-            //       titulo === 'Estoque do fornecedor em quantidade' ||
-            //       titulo === 'Estoque do fornecedor em valor' ||
-            //       titulo === 'Preço médio do fornecedor (R$)'
-            //         ? buildChartColors(baseColors, paginaMetricas.length)
-            //         : buildChartColors(["4CC884", "D68B58"], paginaMetricas.length),
-
-            //     // Fontes
-            //     catAxisLabelFontSize: 10,
-            //     catAxisLabelFontFace: "Montserrat",
-            //     valAxisLabelFontFace: "Montserrat",
-            //     legendFontFace: "Montserrat",
-            //     titleFontFace: "Montserrat",
-
-            //     // Legenda e título
-            //     showLegend:
-            //       !(titulo === 'Estoque do fornecedor em quantidade' ||
-            //         titulo === 'Estoque do fornecedor em valor' ||
-            //         titulo === 'Preço médio do fornecedor (R$)') && paginaMetricas.length > 1,
-
-            //     legendPos: "t",
-            //     title: titulo,
-            //     showTitle: true,
-            //     titleFontSize: 14,
-            //     titleBold: true,
-
-            //     lineSmooth: true,
-
-            //     showValue: true,
-            //     dataLabelFontFace: "Montserrat",
-            //     dataLabelFontSize: 10,
-            //     dataLabelColor: "000000",
-
-            //     dataLabelFormatCode:
-            //       titulo === 'Estoque do fornecedor em quantidade' ||
-            //       titulo === 'Estoque do fornecedor em valor'
-            //         ? '#,##0'
-            //         : '#,##0.0"%"',
-
-            //     valGridLine: { style: "none" },
-            //   }
-            // )
           })
         } else {
           // ========================
