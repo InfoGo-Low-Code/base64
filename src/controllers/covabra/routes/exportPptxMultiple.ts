@@ -338,7 +338,10 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
                   dataLabelFormatCode:
                     titulo === 'Estoque do fornecedor em quantidade' ||
                     titulo === 'Estoque do fornecedor em valor' ||
-                    titulo === 'Preço médio do fornecedor (R$)' ? '#,##0' : '#,##0.0"%"',
+                    titulo === 'Preço médio do fornecedor (R$)' ||
+                    titulo === 'Evolução em ponto percentual da presença' ||
+                    titulo === 'Período médio de estocagem - PME (dias)' ||
+                    titulo === 'Evolução  do PME (dias)' ? '#,##0' : '#,##0.0"%"',
 
                   // pequenas melhorias visuais
                   valGridLine: { style: "none" },
@@ -393,9 +396,11 @@ export function exportPptxMultiple(app: FastifyZodTypedInstance) {
 
                   dataLabelFormatCode:
                     titulo === 'Estoque do fornecedor em quantidade' ||
-                    titulo === 'Estoque do fornecedor em valor'
-                      ? '#,##0'
-                      : '#,##0.0"%"',
+                    titulo === 'Estoque do fornecedor em valor' ||
+                    titulo === 'Preço médio do fornecedor (R$)' ||
+                    titulo === 'Evolução em ponto percentual da presença' ||
+                    titulo === 'Período médio de estocagem - PME (dias)' ||
+                    titulo === 'Evolução  do PME (dias)' ? '#,##0' : '#,##0.0"%"',
 
                   valGridLine: { style: "none" },
                 }
