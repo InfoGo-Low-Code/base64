@@ -53,4 +53,8 @@ npm run dev
 
 # O servidor irá rodar, por padrão, na porta 3333 e será exibido no log:
 # HTTP Server running on PORT 3333
+
+
+# COMO SUBIR PARA O GCLOUD
+gcloud run deploy infogo-back-base64 --source . --region southamerica-east1 --project checkgo-e8680 --env-vars-file env.yaml
 ```
