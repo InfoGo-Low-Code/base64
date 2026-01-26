@@ -14,6 +14,11 @@ const envSchema = z.object({
   TENANT_ID_AZURE: z.string(),
   CLIENT_ID_AZURE: z.string(),
   CLIENT_SECRET_AZURE: z.string(),
+
+  DB_USER_NEW: z.string(),
+  DB_PASSWORD_NEW: z.string(),
+  DB_SERVER_NEW: z.string(),
+  DB_PORT_NEW: z.coerce.number().default(1433),
 })
 
 export const env = envSchema.parse(process.env)

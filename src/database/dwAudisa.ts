@@ -1,14 +1,14 @@
 import sql, { ConnectionPool, config as SQLConfig } from 'mssql'
 import { env } from '@/env'
 
-const { DB_USER, DB_PASSWORD, DB_SERVER, DB_PORT } = env
+const { DB_USER_NEW, DB_PASSWORD_NEW, DB_SERVER_NEW, DB_PORT_NEW } = env
 
 const dbConfig: SQLConfig = {
-  user: DB_USER,
-  password: DB_PASSWORD,
-  server: DB_SERVER,
+  user: DB_USER_NEW,
+  password: DB_PASSWORD_NEW,
+  server: DB_SERVER_NEW,
   database: 'dw_audisa',
-  port: DB_PORT,
+  port: DB_PORT_NEW,
   options: {
     encrypt: true,
     trustServerCertificate: true,
