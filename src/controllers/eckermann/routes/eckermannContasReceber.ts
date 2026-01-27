@@ -48,6 +48,16 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
       const { registros } = request.body
       const db = await getEckermannConnection()
 
+      const {
+        recordset: connectionTest
+      } = await db.query(`SELECT TOP 1 * FROM eckermann_contas_a_receber`)
+
+      if (connectionTest.length === 0) {
+        return reply.internalServerError("Erro ao realizar teste de conexão")
+      }
+
+      console.log(`Registros encontrados: ${connectionTest.length} registros`)
+
       console.log(`[INFO] Total de registros recebidos: ${registros.length}`)
 
       // ============================
@@ -102,7 +112,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
         const result = await db
           .request()
           .input('Registros', table)
-          .execute('spMergeEckermannContasReceber')
+          .execute('dbo.spMergeEckermannContasReceber')
 
         console.log('[INFO] Resultado do MERGE:', result.recordset)
 
