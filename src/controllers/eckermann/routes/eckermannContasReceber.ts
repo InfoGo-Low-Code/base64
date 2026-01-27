@@ -51,6 +51,8 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
       const {
         recordset: connectionTest
       } = await db.query(`
+        USE dw_hmetrix;
+
         SELECT 
             name AS procedure_name
         FROM sys.procedures
