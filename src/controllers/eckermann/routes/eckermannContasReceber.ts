@@ -50,7 +50,12 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
 
       const {
         recordset: connectionTest
-      } = await db.query(`SELECT TOP 1 * FROM eckermann_contas_a_receber`)
+      } = await db.query(`
+        SELECT 
+            name AS procedure_name
+        FROM sys.procedures
+        WHERE name = 'spMergeEckermannContasReceber'
+      `)
 
       if (connectionTest.length === 0) {
         return reply.internalServerError("Erro ao realizar teste de conexão")
