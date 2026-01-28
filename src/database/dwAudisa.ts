@@ -21,7 +21,8 @@ export async function getDwAudisaConnection(): Promise<ConnectionPool> {
   if (pool) return pool
 
   try {
-    pool = await sql.connect(dbConfig)
+    pool = await new sql.ConnectionPool(dbConfig).connect()
+
     console.log('✅ Conectado ao SQL Server!')
     return pool
   } catch (error) {
