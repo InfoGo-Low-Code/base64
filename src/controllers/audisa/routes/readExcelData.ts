@@ -201,6 +201,8 @@ export function readExcelData(app: FastifyZodTypedInstance) {
 
       const db = await getDwAudisaConnection()
 
+      keyPassos.push(`=== CONEXÃO REALIZADA: ${JSON.stringify(db.config)}`)
+
       const registers: ExcelDataTransformed[] = []
 
       try {
