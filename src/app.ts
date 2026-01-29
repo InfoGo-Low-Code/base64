@@ -25,6 +25,7 @@ import { fileExtensionConverter } from './controllers/fileExtensionConverter'
 import { covabraRoutes } from './controllers/covabra/covabra.routes'
 import { biogenRoutes } from './controllers/biogen/biogen.routes'
 import { ocr } from './controllers/ocr'
+import { ocrMultiplePages } from './controllers/ocrMultiplePages'
 
 export const app = fastify({
   bodyLimit: 5 * 1024 * 1024
@@ -57,3 +58,4 @@ app.register(fileExtensionConverter)
 app.register(covabraRoutes)
 app.register(biogenRoutes)
 app.register(ocr)
+app.register(ocrMultiplePages)
