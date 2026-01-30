@@ -81,7 +81,7 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
               )
               THEN 'Cliente Bloqueado - Pagamento'
               ELSE validacao
-            END AS OBS
+            END AS 'OBS',
             unidade AS 'UNIDADE',
             CASE 
               WHEN DATENAME(WEEKDAY, DATEADD(DAY, 1, data)) IN ('Saturday', 'domingo', 'Saturday', 'Sábado') THEN 
