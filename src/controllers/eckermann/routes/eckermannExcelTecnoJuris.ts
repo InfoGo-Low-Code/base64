@@ -73,7 +73,15 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
             END AS 'PAGO',
             '' AS 'BANCO PAGAMENTO',
             usuario AS 'ADICIONADO POR',
-            validacao AS 'OBS',
+            CASE
+              WHEN cliente IN (
+              'BANCO PAN S.A',
+              'SYSTEMCRED',
+              'BACKSEG – GESTÃO DE DOCUMENTOS E RECEBÍVEIS LTDA'
+              )
+              THEN 'Cliente Bloqueado - Pagamento'
+              ELSE validacao
+            END AS OBS
             unidade AS 'UNIDADE',
             CASE 
               WHEN DATENAME(WEEKDAY, DATEADD(DAY, 1, data)) IN ('Saturday', 'domingo', 'Saturday', 'Sábado') THEN 
