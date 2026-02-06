@@ -96,8 +96,8 @@ const dataReturn = z.object({
   validacao: z.string(),
   banco: z.string(),
   distribuicao: z.string(),
-  smartKey: z.string(),
-  iv: z.string(),
+  // smartKey: z.string(),
+  // iv: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -465,7 +465,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               }
             }
 
-            const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${processosId}`)
+            // const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${processosId}`)
 
             return {
               id: randomUUID(),
@@ -486,10 +486,12 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               validacao,
               banco: `${node.contaCredito ? node.contaCredito.valor1: ''}${node.contaDebito ? ` - ${node.contaDebito.valor1}` : ''}`,
               distribuicao,
-              smartKey: encrypted,
-              iv,
+              // smartKey: encrypted,
+              // iv,
             }
           })
+
+        console.log(transformedData.length)
 
         return reply.send({
           registerAmount: transformedData.length,
