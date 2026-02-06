@@ -3,7 +3,6 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorResponseSchema'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { randomUUID } from 'node:crypto'
-import { createSmartKey } from '@/utils/eckermann/createSmartKey'
 import { encryptTecnoJuris } from '@/utils/eckermann/cryptoTecnoJuris'
 
 export type JwtEckermannSchema = {
@@ -96,8 +95,8 @@ const dataReturn = z.object({
   validacao: z.string(),
   banco: z.string(),
   distribuicao: z.string(),
-  smartKey: z.string(),
-  iv: z.string(),
+  // smartKey: z.string(),
+  // iv: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -465,7 +464,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               }
             }
 
-            const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${processosId}`)
+            // const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${node.processoId}`)
 
             return {
               id: randomUUID(),
@@ -486,8 +485,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               validacao,
               banco: `${node.contaCredito ? node.contaCredito.valor1: ''}${node.contaDebito ? ` - ${node.contaDebito.valor1}` : ''}`,
               distribuicao,
-              smartKey: encrypted,
-              iv,
+              // smartKey: encrypted,
+              // iv,
             }
           })
 
