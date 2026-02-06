@@ -28,7 +28,7 @@ import { ocr } from './controllers/ocr'
 import { ocrMultiplePages } from './controllers/ocrMultiplePages'
 
 export const app = fastify({
-  bodyLimit: 5 * 1024 * 1024
+  bodyLimit: 10 * 1024 * 1024
 }).withTypeProvider<ZodTypeProvider>()
 
 app.setErrorHandler(fastifyErrorHandler)

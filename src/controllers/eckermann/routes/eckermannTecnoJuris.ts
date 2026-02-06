@@ -95,8 +95,8 @@ const dataReturn = z.object({
   validacao: z.string(),
   banco: z.string(),
   distribuicao: z.string(),
-  // smartKey: z.string(),
-  // iv: z.string(),
+  smartKey: z.string(),
+  iv: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -202,8 +202,6 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             hoje.getMonth() - 1,
             1
           )
-
-          // const dataMinima = new Date('2026-01-01')
 
           // filtra apenas registros de 2025
           const registrosValidos = nodes.filter((n) => {
@@ -416,7 +414,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
         
         const transformedData: DataReturn[] = allNodes
           .filter((node) => node !== null)
-          .map((node) => {
+          .map((node, idx) => {
             const cliente = pessoaMap.get(node.pessoaId) ?? 'NÃO INFORMADO'
 
             const pastaData = pastaMap.get(node.processoId)
@@ -464,7 +462,9 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               }
             }
 
-            // const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${node.processoId}`)
+            const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${node.processoId}`)
+
+            console.log({ encrypted, iv, idx })
 
             return {
               id: randomUUID(),
@@ -485,8 +485,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               validacao,
               banco: `${node.contaCredito ? node.contaCredito.valor1: ''}${node.contaDebito ? ` - ${node.contaDebito.valor1}` : ''}`,
               distribuicao,
-              // smartKey: encrypted,
-              // iv,
+              smartKey: encrypted,
+              iv,
             }
           })
 
