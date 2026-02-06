@@ -18,6 +18,7 @@ const registroSchema = z.object({
   fonte_pagadora: z.string(),
   banco: z.string(),
   data_pagamento: z.string().nullable().optional(),
+  obs: z.string().nullable().optional(),
   socio: z.string(),
   empresa: z.string(),
   valor_validado: z.number().nullable().optional(),
@@ -88,6 +89,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
       table.columns.add('socio', sql.NVarChar(500))
       table.columns.add('empresa', sql.NVarChar(500))
       table.columns.add('valor_validado', sql.Decimal(18, 2))
+      table.columns.add('obs', sql.NVarChar(500))
 
       // ============================
       // Preenchimento da TVP
@@ -110,6 +112,7 @@ export function eckermannContasReceber(app: FastifyZodTypedInstance) {
           r.socio,
           r.empresa,
           r.valor_validado ?? 0,
+          r.obs ?? null
         )
       }
 
