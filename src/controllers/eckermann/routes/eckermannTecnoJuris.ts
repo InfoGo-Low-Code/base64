@@ -3,6 +3,8 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorResponseSchema'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { randomUUID } from 'node:crypto'
+import { createSmartKey } from '@/utils/eckermann/createSmartKey'
+import { encryptTecnoJuris } from '@/utils/eckermann/cryptoTecnoJuris'
 
 export type JwtEckermannSchema = {
   usuario: {
@@ -93,7 +95,9 @@ const dataReturn = z.object({
   usuario: z.string(),
   validacao: z.string(),
   banco: z.string(),
-  distribuicao: z.string()
+  distribuicao: z.string(),
+  smartKey: z.string(),
+  iv: z.string(),
 })
 
 type DataReturn = z.infer<typeof dataReturn>
@@ -190,7 +194,17 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           const connection = data.data.valoresConnection
           const nodes = connection.nodes
 
-          const dataMinima = new Date('2025-11-01')
+          console.log(nodes[0].createdAt)
+
+          const hoje = new Date()
+
+          const dataMinima = new Date(
+            hoje.getFullYear(),
+            hoje.getMonth() - 1,
+            1
+          )
+
+          // const dataMinima = new Date('2026-01-01')
 
           // filtra apenas registros de 2025
           const registrosValidos = nodes.filter((n) => {
@@ -451,6 +465,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               }
             }
 
+            const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${processosId}`)
+
             return {
               id: randomUUID(),
               cliente,
@@ -470,6 +486,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
               validacao,
               banco: `${node.contaCredito ? node.contaCredito.valor1: ''}${node.contaDebito ? ` - ${node.contaDebito.valor1}` : ''}`,
               distribuicao,
+              smartKey: encrypted,
+              iv,
             }
           })
 
