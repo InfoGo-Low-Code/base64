@@ -164,7 +164,7 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
 
         const idFolderMesAtual = filesAnoAtual.find(({ name }) => name === mesAtualString)?.id
 
-        console.log({ idFolderMesAtual })
+        console.log({ idFolderMesAtual, mesAtualString, mesAtual })
 
         const { data: {
           value: filesMesAtual

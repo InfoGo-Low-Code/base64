@@ -9,6 +9,7 @@ import { getEckermannConnection } from '@/database/eckermann'
 import sql, { ConnectionPool } from 'mssql'
 import { parseNomeArquivo } from '@/schemas/eckermann/parseNomeArquivo'
 import { proximoDiaUtil } from '@/utils/eckermann/proximoDiaUtil'
+import { buscarCnpj } from '@/utils/eckermann/buscarCnpj'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -20,8 +21,9 @@ const infoFound = z.object({
   nomeArquivo: z.string(),
   boleto: z.custom<Boleto>().nullable(),
   dataPagamento: z.string().nullable(),
-  beneficiario: z.string().nullable(),
-})
+  nomeBeneficiario: z.string().nullable(),
+  inscricaoBeneficiario: z.string().nullable(),
+}).optional()
 
 type InfoFound = z.infer<typeof infoFound>
 
@@ -32,7 +34,39 @@ type FileData = {
   downloadUrl: string
 }
 
-let roda = true
+const inscricaoCache = new Map<string, any>()
+
+async function buscarInscricao(
+  app: FastifyZodTypedInstance,
+  inscricao: string,
+  db: ConnectionPool
+): Promise<{
+  nomeBeneficiario: string
+  inscricaoBeneficiario: string
+}> {
+  let nomeBeneficiario = ''
+  let inscricaoBeneficiario = ''
+
+  const regexCNPJ = /^\d{14}$/
+
+  if (regexCNPJ.test(inscricao)) {
+    const responseCnpj = await buscarCnpj(app, db, inscricao, inscricaoCache)
+
+    nomeBeneficiario = responseCnpj.razao_social
+    inscricaoBeneficiario = responseCnpj.cnpj
+
+    return { nomeBeneficiario, inscricaoBeneficiario }
+  } else {
+    console.log(`Tem (;): ${inscricao}`)
+
+    const beneficiario = inscricao.split(';')
+
+    nomeBeneficiario = beneficiario[0].toUpperCase().trim()
+    inscricaoBeneficiario = beneficiario[1].toUpperCase().trim()
+
+    return { nomeBeneficiario, inscricaoBeneficiario }
+  }
+}
 
 function normalizeValor(valor: string) {
   valor = valor.trim()
@@ -88,7 +122,8 @@ async function processFile(
         nomeArquivo: name,
         boleto: null,
         dataPagamento: null,
-        beneficiario: null,
+        nomeBeneficiario: null,
+        inscricaoBeneficiario: null,
       }
     }
   
@@ -101,194 +136,216 @@ async function processFile(
         nomeArquivo: name,
         boleto: null,
         dataPagamento: null,
-        beneficiario: null
+        nomeBeneficiario: null,
+        inscricaoBeneficiario: null,
       }
     }
   
     // console.log('PROCESSANDO:', name)
+
+    try {
   
-    // 1. Download do PDF
-    const { data: pdfBuffer } = await app.axios.get(
-      downloadUrl,
-      {
-        responseType: "arraybuffer",
-        headers: {
-          Authorization: `Bearer ${accessTokenGraph}`
+      // 1. Download do PDF
+      const { data: pdfBuffer } = await app.axios.get(
+        downloadUrl,
+        {
+          responseType: "arraybuffer",
+          headers: {
+            Authorization: `Bearer ${accessTokenGraph}`
+          }
         }
-      }
-    )
+      )
 
-    const { data: dataFile } = await app.axios.post<{
-      Result: {
-        text: string
-      }
-    }>(
-      'https://my-space-v-wco.api.integrasky.cloud/weCR3B7Wvd',
-      {
-        PDF: downloadUrl,
-        Prompt: `Você é um especialista em boletos bancários brasileiros (FEBRABAN). A seguir está o arquivo de um boleto em PDF (via arquivo). Seu objetivo é identificar e retornar APENAS o NOME DO BENEFICIÁRIO DO BOLETO (quem recebe o pagamento). REGRAS IMPORTANTES: Beneficiário NÃO é o pagador, sacado, cliente ou devedor; Beneficiário também pode aparecer como Cedente, Favorecido ou termos equivalentes; Ignore nomes de pessoas físicas quando estiverem claramente identificadas como pagador/sacado; O nome do beneficiário normalmente aparece: próximo de rótulos como: Beneficiário, Cedente, Favorecido ou imediatamente acima de um CNPJ; Caso existam múltiplos nomes no documento, escolha aquele que claramente representa a empresa ou entidade que EMITIU o boleto. Retorne o nome exatamente como aparece no boleto, sem inventar ou corrigir. Se não for possível identificar com segurança, retorne: null. FORMATO DA RESPOSTA: Retorne apenas o nome encontrado`,
-        Nome_Arquivo: name
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
+      const { data: dataFile } = await app.axios.post<{
+        Result: {
+          text: string
         }
-      }
-    )
+      }>(
+        'https://my-space-v-wco.api.integrasky.cloud/weCR3B7Wvd',
+        {
+          PDF: downloadUrl,
+          Nome_Arquivo: name
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      )
 
-    const beneficiario = dataFile.Result.text
+      let respostaBeneficiario = dataFile.Result.text
 
-    await sleep(10000)
-  
-    // Regexes para validação e extração (mantidas do seu código)
-    const regexLinhaDigitavel = /\b\d{5}[.\s]?\d{5}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d[.\s]?\d{14}\b/g
-    const regexCodigoBarras = /\b\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\b/g
-    const regexCodigoBarrasComDV = /\b\d{11}-\d(?:\s+\d{11}-\d){3}\b/g
+      let nomeBeneficiario = null
+      let inscricaoBeneficiario = null
+
+      let beneficiario = await buscarInscricao(app, respostaBeneficiario, db)
+
+      console.log({ beneficiario, name })
+
+      nomeBeneficiario = beneficiario.nomeBeneficiario
+      inscricaoBeneficiario = beneficiario.inscricaoBeneficiario
+
+      await sleep(10000)
     
-    // 2. Extração de texto
-    let parsedText = await new PDFParse({ data: pdfBuffer }).getText()
+      // Regexes para validação e extração (mantidas do seu código)
+      const regexLinhaDigitavel = /\b\d{5}[.\s]?\d{5}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d[.\s]?\d{14}\b/g
+      const regexCodigoBarras = /\b\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\b/g
+      const regexCodigoBarrasComDV = /\b\d{11}-\d(?:\s+\d{11}-\d){3}\b/g
+      
+      // 2. Extração de texto
+      let parsedText = await new PDFParse({ data: pdfBuffer }).getText()
+      
+      let linhaDigitavel = parsedText.text.match(regexLinhaDigitavel)
+      let codigoBarras = parsedText.text.match(regexCodigoBarras)
+      let codigoBarrasDv = parsedText.text.match(regexCodigoBarrasComDV)
     
-    let linhaDigitavel = parsedText.text.match(regexLinhaDigitavel)
-    let codigoBarras = parsedText.text.match(regexCodigoBarras)
-    let codigoBarrasDv = parsedText.text.match(regexCodigoBarrasComDV)
-  
-    let aSerValidado = linhaDigitavel || codigoBarras || codigoBarrasDv
-  
-    if (!aSerValidado) {
-      // 3. Tenta OCR se não encontrou nada no PDF parse
-      // console.log('Tentando OCR…')
-      const textFound = await ocrPdfToText(pdfBuffer)
-  
-      linhaDigitavel = textFound.match(regexLinhaDigitavel)
-      codigoBarras = textFound.match(regexCodigoBarras)
-      codigoBarrasDv = textFound.match(regexCodigoBarrasComDV)
-  
-      aSerValidado = codigoBarras || linhaDigitavel || codigoBarrasDv
-  
+      let aSerValidado = linhaDigitavel || codigoBarras || codigoBarrasDv
+    
       if (!aSerValidado) {
-        // 4. Retorno se nada for encontrado
-        // console.log('⚠ Nada encontrado no arquivo:', name)
-        return {
-          nomeArquivo: name,
-          boleto: null,
-          dataPagamento: null,
-          beneficiario,
+        // 3. Tenta OCR se não encontrou nada no PDF parse
+        // console.log('Tentando OCR…')
+        const textFound = await ocrPdfToText(pdfBuffer)
+    
+        linhaDigitavel = textFound.match(regexLinhaDigitavel)
+        codigoBarras = textFound.match(regexCodigoBarras)
+        codigoBarrasDv = textFound.match(regexCodigoBarrasComDV)
+    
+        aSerValidado = codigoBarras || linhaDigitavel || codigoBarrasDv
+    
+        if (!aSerValidado) {
+          // 4. Retorno se nada for encontrado
+          // console.log('⚠ Nada encontrado no arquivo:', name)
+          return {
+            nomeArquivo: name,
+            boleto: null,
+            dataPagamento: null,
+            nomeBeneficiario,
+            inscricaoBeneficiario,
+          }
         }
       }
-    }
-  
-    // 5. Validação do Boleto
-    const texto = aSerValidado![0]
-    const somenteNumeros = String(texto.replace(/[^\d]/g, ''))
-    const parsedBoleto = validarBoleto(somenteNumeros)
-  
-    // 6. Extração de informações do nome do arquivo (pasta e valor)
-    // const nomeLimpo = normalize(name).replace('-.PDF', '.PDF').replace('.PDF', '').trim()
-    // const lastDashIndex = nomeLimpo.lastIndexOf('-')
-    // let idPastaProcesso = nomeLimpo.substring(0, lastDashIndex).trim()
-  
-    // Lógica de normalização de idPastaProcesso (mantida do seu código)
-    if (idPastaProcesso.includes('- R')) {
-      idPastaProcesso = idPastaProcesso.replace('- R', '').trim()
-    }
-  
-    if (idPastaProcesso.includes('-R')) {
-      idPastaProcesso = idPastaProcesso.replace('-R', '').trim()
-    }
-  
-    if (
-      idPastaProcesso.includes('BRADESCO') ||
-      idPastaProcesso.includes('EEP') ||
-      idPastaProcesso.includes('NX') ||
-      idPastaProcesso.includes('BLU') ||
-      idPastaProcesso.includes('LFT') ||
-      (idPastaProcesso.includes('C6') && !idPastaProcesso.includes('BUSCA'))
-    ) {
-      const parts = idPastaProcesso.split(/[\s-]/).filter(p => p.trim() !== '')
-      if (parts.length >= 2) {
+    
+      // 5. Validação do Boleto
+      const texto = aSerValidado![0]
+      const somenteNumeros = String(texto.replace(/[^\d]/g, ''))
+      const parsedBoleto = validarBoleto(somenteNumeros)
+    
+      // 6. Extração de informações do nome do arquivo (pasta e valor)
+      // const nomeLimpo = normalize(name).replace('-.PDF', '.PDF').replace('.PDF', '').trim()
+      // const lastDashIndex = nomeLimpo.lastIndexOf('-')
+      // let idPastaProcesso = nomeLimpo.substring(0, lastDashIndex).trim()
+    
+      // Lógica de normalização de idPastaProcesso (mantida do seu código)
+      if (idPastaProcesso.includes('- R')) {
+        idPastaProcesso = idPastaProcesso.replace('- R', '').trim()
+      }
+    
+      if (idPastaProcesso.includes('-R')) {
+        idPastaProcesso = idPastaProcesso.replace('-R', '').trim()
+      }
+    
+      if (
+        idPastaProcesso.includes('BRADESCO') ||
+        idPastaProcesso.includes('EEP') ||
+        idPastaProcesso.includes('NX') ||
+        idPastaProcesso.includes('BLU') ||
+        idPastaProcesso.includes('LFT') ||
+        (idPastaProcesso.includes('C6') && !idPastaProcesso.includes('BUSCA'))
+      ) {
+        const parts = idPastaProcesso.split(/[\s-]/).filter(p => p.trim() !== '')
+        if (parts.length >= 2) {
+          idPastaProcesso = `${parts[0].trim()} - ${parts[1].trim()}`
+        }
+      }
+    
+      if (idPastaProcesso.includes('C6 BUSCA')) {
+        const parts = idPastaProcesso.split('-').filter(p => p.trim() !== '')
+    
         idPastaProcesso = `${parts[0].trim()} - ${parts[1].trim()}`
       }
-    }
-  
-    if (idPastaProcesso.includes('C6 BUSCA')) {
-      const parts = idPastaProcesso.split('-').filter(p => p.trim() !== '')
-  
-      idPastaProcesso = `${parts[0].trim()} - ${parts[1].trim()}`
-    }
-  
-    if (idPastaProcesso.includes('ITAU') ||idPastaProcesso.includes('ITAÚ')) {
-      const parts = idPastaProcesso.split(/[\s-]/).filter(p => p.trim() !== '')
-      if (parts.length >= 2) {
-        idPastaProcesso = `ITAÚ - ${parts[1].trim()}`
-      }
-    }
-  
-    if (idPastaProcesso.includes('AT') && idPastaProcesso.includes('-')) {
-      const [siglaAT, numero] = idPastaProcesso.split('-')
-      idPastaProcesso = `${siglaAT.trim()} - ${numero.trim()}`
-    }
-  
-    if (idPastaProcesso.includes('VISIO') && idPastaProcesso.includes('-')) {
-      const [siglaAT, numero] = idPastaProcesso.split('-')
-      idPastaProcesso = `${siglaAT.trim()}  - ${numero.trim()}`
-    }
     
-    // let valorRaw = nomeLimpo.substring(lastDashIndex + 1).trim()
-    let valorRaw = valor
-    valorRaw = valorRaw.replace(/\(.*?\)/g, '').trim()
-    const valorFormatado = normalizeValor(valorRaw)
-  
-    // 7. Consulta no Banco de Dados
-    const query = `
-      SELECT id, cliente, valor, data
-      FROM dw_hmetrix.dbo.eckermann_tecnojuris
-      WHERE pasta LIKE '%${idPastaProcesso}%' AND valor = ${valorFormatado}
-    `
-
-    const { recordset } = await db.query<RecordsetDb[]>(query)
-  
-    if (recordset.length === 0) {
-      console.log(query, recordset)
-    }
-
-    if (recordset.length > 0) {
-      const dataPagamento = proximoDiaUtil(recordset[0].data.toISOString())
-
-      // console.log(dataPagamento, recordset[0].data, new Date(recordset[0].data))
-
-      await db
-        .request()
-        .input('id', sql.NVarChar(255), recordset[0].id)
-        .input('codigoBarras', sql.NVarChar(255), parsedBoleto.codigoBarras)
-        .input('linhaDigitavel', sql.NVarChar(255), parsedBoleto.linhaDigitavel)
-        .input('dataPagamento', sql.Date, new Date(dataPagamento))
-        .input('nomeBeneficiario', sql.NVarChar(255), beneficiario)
-        .input('dataVencimentoBoleto', sql.Date, new Date(parsedBoleto.vencimentoComNovoFator2025))
-        .query(`
-          UPDATE dbo.eckermann_tecnojuris
-          SET
-            codigoBarras = @codigoBarras,
-            linhaDigitavel = @linhaDigitavel,
-            dataPagamento = @dataPagamento,
-            statusPagamento = 'PENDENTE',
-            nomeBeneficiario = @nomeBeneficiario,
-            dataVencimentoBoleto = @dataVencimentoBoleto
-          WHERE id = @id
-        `)
+      if (idPastaProcesso.includes('ITAU') ||idPastaProcesso.includes('ITAÚ')) {
+        const parts = idPastaProcesso.split(/[\s-]/).filter(p => p.trim() !== '')
+        if (parts.length >= 2) {
+          idPastaProcesso = `ITAÚ - ${parts[1].trim()}`
+        }
+      }
+    
+      if (idPastaProcesso.includes('AT') && idPastaProcesso.includes('-')) {
+        const [siglaAT, numero] = idPastaProcesso.split('-')
+        idPastaProcesso = `${siglaAT.trim()} - ${numero.trim()}`
+      }
+    
+      if (idPastaProcesso.includes('VISIO') && idPastaProcesso.includes('-')) {
+        const [siglaAT, numero] = idPastaProcesso.split('-')
+        idPastaProcesso = `${siglaAT.trim()}  - ${numero.trim()}`
+      }
       
+      // let valorRaw = nomeLimpo.substring(lastDashIndex + 1).trim()
+      let valorRaw = valor
+      valorRaw = valorRaw.replace(/\(.*?\)/g, '').trim()
+      const valorFormatado = normalizeValor(valorRaw)
+    
+      // 7. Consulta no Banco de Dados
+      const query = `
+        SELECT id, cliente, valor, data
+        FROM dw_hmetrix.dbo.eckermann_tecnojuris
+        WHERE pasta LIKE '%${idPastaProcesso}%' AND valor = ${valorFormatado}
+      `
+
+      const { recordset } = await db.query<RecordsetDb[]>(query)
+    
+      if (recordset.length === 0) {
+        console.log(query, recordset)
+      }
+
+      if (recordset.length > 0) {
+        const dataPagamento = proximoDiaUtil(recordset[0].data.toISOString())
+
+        // console.log(dataPagamento, recordset[0].data, new Date(recordset[0].data))
+
+        console.log(inscricaoBeneficiario)
+        await db
+          .request()
+          .input('id', sql.NVarChar(255), recordset[0].id)
+          .input('codigoBarras', sql.NVarChar(255), parsedBoleto.codigoBarras)
+          .input('linhaDigitavel', sql.NVarChar(255), parsedBoleto.linhaDigitavel)
+          .input('dataPagamento', sql.Date, new Date(dataPagamento))
+          .input('nomeBeneficiario', sql.NVarChar(255), nomeBeneficiario)
+          .input('inscricaoBeneficiario', sql.NVarChar(255), inscricaoBeneficiario)
+          .input('dataVencimentoBoleto', sql.Date, new Date(parsedBoleto.vencimentoComNovoFator2025))
+          .query(`
+            UPDATE dbo.eckermann_tecnojuris
+            SET
+              codigoBarras = @codigoBarras,
+              linhaDigitavel = @linhaDigitavel,
+              dataPagamento = @dataPagamento,
+              statusPagamento = 'PENDENTE',
+              nomeBeneficiario = @nomeBeneficiario,
+              dataVencimentoBoleto = @dataVencimentoBoleto,
+              inscricaoBeneficiario = @inscricaoBeneficiario
+            WHERE id = @id
+          `)
+        
+        return {
+          nomeArquivo: name,
+          boleto: parsedBoleto,
+          dataPagamento: dataPagamento.toISOString().substring(0, 10),
+          nomeBeneficiario,
+          inscricaoBeneficiario,
+        }
+      }
+
       return {
         nomeArquivo: name,
         boleto: parsedBoleto,
-        dataPagamento: dataPagamento.toISOString().substring(0, 10),
-        beneficiario,
+        dataPagamento: null,
+        nomeBeneficiario,
+        inscricaoBeneficiario,
       }
-    }
-
-    return {
-      nomeArquivo: name,
-      boleto: parsedBoleto,
-      dataPagamento: null,
-      beneficiario,
+    } catch (error) {
+      console.log(`Erro de Arquivo: ${name}`)
+      console.log(error)
     }
 }
 

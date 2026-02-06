@@ -31,7 +31,7 @@ export const tecnoJurisSchema = z.object({
   efetivado: z.number().optional(), // ✅
   faturado: z.number().optional(), // ✅
   codigoBarras: z.string(), // ✅
-  dataVencimentoBoleto: z.string(), // ✅
+  dataVencimentoBoleto: z.date(), // ✅
   nomeBeneficiario: z.string(), // 
 })
 
