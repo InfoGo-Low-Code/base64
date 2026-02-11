@@ -26,6 +26,7 @@ import { covabraRoutes } from './controllers/covabra/covabra.routes'
 import { biogenRoutes } from './controllers/biogen/biogen.routes'
 import { ocr } from './controllers/ocr'
 import { ocrMultiplePages } from './controllers/ocrMultiplePages'
+import { hmetrixRoutes } from './controllers/hmetrix/hmetrix.routes'
 
 export const app = fastify({
   bodyLimit: 10 * 1024 * 1024
@@ -59,3 +60,4 @@ app.register(covabraRoutes)
 app.register(biogenRoutes)
 app.register(ocr)
 app.register(ocrMultiplePages)
+app.register(hmetrixRoutes)

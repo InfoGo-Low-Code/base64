@@ -48,6 +48,8 @@ export function urlFileToBase64(app: FastifyZodTypedInstance) {
           nomeArquivo,
         })
       } catch (error) {
+        console.log(error)
+
         if (hasZodFastifySchemaValidationErrors(error)) {
           const formattedErrors = error.validation.map((validation) => {
             return validation.params.issue
