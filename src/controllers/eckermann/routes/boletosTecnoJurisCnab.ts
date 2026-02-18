@@ -9,7 +9,7 @@ import { getEckermannConnection } from '@/database/eckermann'
 import sql, { ConnectionPool } from 'mssql'
 import { parseNomeArquivo } from '@/schemas/eckermann/parseNomeArquivo'
 import { proximoDiaUtil } from '@/utils/eckermann/proximoDiaUtil'
-import { buscarCnpj } from '@/utils/eckermann/buscarCnpj'
+import { buscarCnpj, CNPJResponse } from '@/utils/eckermann/buscarCnpj'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -34,7 +34,7 @@ type FileData = {
   downloadUrl: string
 }
 
-const inscricaoCache = new Map<string, any>()
+const inscricaoCache = new Map<string, CNPJResponse>()
 
 async function buscarInscricao(
   app: FastifyZodTypedInstance,
@@ -95,10 +95,11 @@ function normalizeValor(valor: string) {
 }
 
 type RecordsetDb = {
-    id: string,
-    cliente: string,
-    valor: number,
-    data: Date,
+    id: string
+    cliente: string
+    pasta: string
+    valor: number
+    data: Date
 }
 
 // =======================
@@ -144,7 +145,6 @@ async function processFile(
     // console.log('PROCESSANDO:', name)
 
     try {
-  
       // 1. Download do PDF
       const { data: pdfBuffer } = await app.axios.get(
         downloadUrl,
@@ -156,6 +156,11 @@ async function processFile(
         }
       )
 
+      const inscricaoArray = Array.from(inscricaoCache, ([key, value]) => ({
+        cnpj: key,
+        pagador: value.razao_social,
+      }))
+
       const { data: dataFile } = await app.axios.post<{
         Result: {
           text: string
@@ -164,7 +169,8 @@ async function processFile(
         'https://my-space-v-wco.api.integrasky.cloud/weCR3B7Wvd',
         {
           PDF: downloadUrl,
-          Nome_Arquivo: name
+          Nome_Arquivo: name,
+          Pagadores: inscricaoArray
         },
         {
           headers: {
@@ -173,20 +179,35 @@ async function processFile(
         }
       )
 
-      let respostaBeneficiario = dataFile.Result.text
+      let llmResponse = dataFile.Result.text
+
+      console.warn({ llmResponse, name })
 
       let nomeBeneficiario = null
       let inscricaoBeneficiario = null
 
-      let beneficiario = await buscarInscricao(app, respostaBeneficiario, db)
+      const regexCNPJ = /^\d{14}$/
 
-      console.log({ beneficiario, name })
+      let beneficiario = {
+        nomeBeneficiario: '',
+        inscricaoBeneficiario: ''
+      }
+
+      let orgao = ''
+
+      if (regexCNPJ.test(llmResponse) || llmResponse.includes(';')) {
+        beneficiario = await buscarInscricao(app, llmResponse, db)
+      } else {
+        orgao = llmResponse
+      }
+
+      // console.log({ beneficiario, name })
 
       nomeBeneficiario = beneficiario.nomeBeneficiario
       inscricaoBeneficiario = beneficiario.inscricaoBeneficiario
 
-      await sleep(10000)
-    
+      await sleep(7000)
+
       // Regexes para validação e extração (mantidas do seu código)
       const regexLinhaDigitavel = /\b\d{5}[.\s]?\d{5}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d[.\s]?\d{14}\b/g
       const regexCodigoBarras = /\b\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\s?\d{10,12}\s?\d\b/g
@@ -229,6 +250,10 @@ async function processFile(
       const texto = aSerValidado![0]
       const somenteNumeros = String(texto.replace(/[^\d]/g, ''))
       const parsedBoleto = validarBoleto(somenteNumeros)
+
+      let valorCnab: number | string = ''
+
+      // valorCnab = parsedBoleto.valor
     
       // 6. Extração de informações do nome do arquivo (pasta e valor)
       // const nomeLimpo = normalize(name).replace('-.PDF', '.PDF').replace('.PDF', '').trim()
@@ -270,6 +295,11 @@ async function processFile(
           idPastaProcesso = `ITAÚ - ${parts[1].trim()}`
         }
       }
+
+      if (idPastaProcesso.includes('AT') && !idPastaProcesso.includes('-')) {
+        const [siglaAT, numero] = idPastaProcesso.split(' ')
+        idPastaProcesso = `${siglaAT.trim()} - ${numero.trim()}`
+      }
     
       if (idPastaProcesso.includes('AT') && idPastaProcesso.includes('-')) {
         const [siglaAT, numero] = idPastaProcesso.split('-')
@@ -285,10 +315,17 @@ async function processFile(
       let valorRaw = valor
       valorRaw = valorRaw.replace(/\(.*?\)/g, '').trim()
       const valorFormatado = normalizeValor(valorRaw)
-    
+
+      if (name.includes('NX 1114071')) idPastaProcesso = 'NX - 1114701'
+      
       // 7. Consulta no Banco de Dados
       const query = `
-        SELECT id, cliente, valor, data
+        SELECT
+          id,
+          cliente,
+          valor,
+          pasta,
+          data
         FROM dw_hmetrix.dbo.eckermann_tecnojuris
         WHERE pasta LIKE '%${idPastaProcesso}%' AND valor = ${valorFormatado}
       `
@@ -296,7 +333,7 @@ async function processFile(
       const { recordset } = await db.query<RecordsetDb[]>(query)
     
       if (recordset.length === 0) {
-        console.log(query, recordset)
+        console.log(query)
       }
 
       if (recordset.length > 0) {
@@ -304,7 +341,7 @@ async function processFile(
 
         // console.log(dataPagamento, recordset[0].data, new Date(recordset[0].data))
 
-        console.log(inscricaoBeneficiario)
+        // console.log(inscricaoBeneficiario)
         await db
           .request()
           .input('id', sql.NVarChar(255), recordset[0].id)
@@ -314,6 +351,7 @@ async function processFile(
           .input('nomeBeneficiario', sql.NVarChar(255), nomeBeneficiario)
           .input('inscricaoBeneficiario', sql.NVarChar(255), inscricaoBeneficiario)
           .input('dataVencimentoBoleto', sql.Date, new Date(parsedBoleto.vencimentoComNovoFator2025))
+          .input('orgao', sql.NVarChar(255), orgao)
           .query(`
             UPDATE dbo.eckermann_tecnojuris
             SET
@@ -323,7 +361,8 @@ async function processFile(
               statusPagamento = 'PENDENTE',
               nomeBeneficiario = @nomeBeneficiario,
               dataVencimentoBoleto = @dataVencimentoBoleto,
-              inscricaoBeneficiario = @inscricaoBeneficiario
+              inscricaoBeneficiario = @inscricaoBeneficiario,
+              orgao = @orgao
             WHERE id = @id
           `)
         
@@ -396,7 +435,7 @@ export function boletosTecnoJurisCnab(app: FastifyZodTypedInstance) {
 
       const accessTokenGraph = tokenResponse.data.access_token
 
-      const limit = pLimit(3)
+      const limit = pLimit(1)
 
       const db = await getEckermannConnection()
 

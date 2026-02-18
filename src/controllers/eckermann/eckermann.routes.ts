@@ -16,6 +16,7 @@ import { returnExcelDataEckermannMultiple } from './routes/returnExcelDataEckerm
 import { boletosTecnoJurisCnab } from './routes/boletosTecnoJurisCnab'
 import { eckermannCnabP } from './routes/eckermannCnabP'
 import { eckermannCnabJ } from './routes/eckermannCnabJ'
+import { arquivoOmieCnab } from './routes/arquivoOmieCnab'
 
 export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(returnExcelDataEckermann)
@@ -35,4 +36,5 @@ export function eckermannRoutes(app: FastifyZodTypedInstance) {
   app.register(boletosTecnoJurisCnab)
   app.register(eckermannCnabP)
   app.register(eckermannCnabJ)
+  app.register(arquivoOmieCnab)
 }

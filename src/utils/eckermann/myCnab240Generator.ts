@@ -1,6 +1,6 @@
-export type SegmentoJ = {
+export type SegmentoJO = {
   id: string
-  codigoBarras: string | number
+  codigoBarras: string
   
   nomeBeneficiario: string
   inscricaoBeneficiario: string // O CPF ou CNPJ sem pontos/hífens
@@ -9,12 +9,19 @@ export type SegmentoJ = {
   dataVencimentoBoleto: Date
   dataPagamento: Date
   valor: number
+  orgao: string
 }
 
 function formatarNum(valor: string | number, tamanho: number): string {
   // Garante que é número, corta se for maior e preenche com zeros à esquerda
   return String(valor).substring(0, tamanho).padStart(tamanho, '0')
 }
+
+export function formatarValorFinanceiro(valor: number, tamanho: number): string {
+    // Exemplo: 2445.37 -> 244537
+    const valorLimpo = Math.round(valor * 100).toString()
+    return valorLimpo.padStart(tamanho, '0')
+  }
 
 function formatarAlfa(texto: string, tamanho: number): string {
   // Remove acentos e caracteres especiais, corta se for grande e preenche com espaços
@@ -34,6 +41,7 @@ const nomeEmpresa = 'ECKERMANN E SANTOS SOCIEDADE DE ADVOGADOS'
 // 01.3J | do 1 ao 3 caracteres ✅
 // 01.5 | do 1 ao 3 caracteres ✅
 // 01.9 | do 1 ao 3 caracteres ✅
+// 01.O | do 1 ao 3 caracteres ✅
 const BANCO = '001'
 
 // 05.0 | do 18 ao 18 caracteres ✅
@@ -103,12 +111,6 @@ export class MyCNABGenerator {
     return `${horas}${minutos}${segundos}`
   }
 
-  private formatarValorFinanceiro(valor: number, tamanho: number): string {
-    // Exemplo: 2445.37 -> 244537
-    const valorLimpo = Math.round(valor * 100).toString(); 
-    return valorLimpo.padStart(tamanho, '0');
-  }
-
   private headerArquivo(data: Date, ultimoGerado: number) {
     const LOTE = '0000' // 02.0 | do 4 ao 7 caracteres ✅
     const REGISTRO = '0' // 03.0 | do 8 ao 8 caracteres ✅
@@ -173,7 +175,7 @@ export class MyCNABGenerator {
   }
 
   private headerLoteJ(ultimoLote: number, formaLancamento: '31' | '30') {
-    const LOTE = formatarNum(ultimoLote + 1, 4) // 02.1 | do 4 ao 7 caracteres ✅
+    const LOTE = formatarNum(ultimoLote, 4) // 02.1 | do 4 ao 7 caracteres ✅
     const TIPO_REGISTRO = '1' // 03.1 | do 8 ao 8 caracteres ✅
     const TIPO_OPERACAO = 'C' // 04.1 | do 9 ao 9 caracteres ✅
     const TIPO_SERVICO = '98' // 05.1 | do 10 ao 11 caracteres ✅
@@ -231,10 +233,10 @@ export class MyCNABGenerator {
     this.lines.push(linha)
   }
 
-  private segmentoJ(ultimoLote: number, recordset: SegmentoJ) {
+  private segmentoJ(ultimoLote: number, recordset: SegmentoJO) {
     this.sequencia++
 
-    const LOTE = formatarNum(ultimoLote + 1, 4) // 02.3J | do 4 ao 7 caracteres ✅
+    const LOTE = formatarNum(ultimoLote, 4) // 02.3J | do 4 ao 7 caracteres ✅
     const REGISTRO = '3' // 03.3J | do 8 ao 8 caracteres ✅
     const NUMERO_REGISTRO = formatarNum(this.sequencia, 5) // 04.3J | do 9 ao 13 caracteres ✅
     const SEGMENTO = 'J' // 05.3J | do 14 ao 14 caracteres ✅
@@ -243,11 +245,11 @@ export class MyCNABGenerator {
     const CODIGO_BARRAS = formatarNum(String(recordset.codigoBarras).replace(/\D/g, ''), 44) // 08.3J | do 18 ao 61 caracteres ✅
     const NOME_BENEFICIARIO = formatarAlfa(recordset.nomeBeneficiario, 30) // 09.3J | do 62 ao 91 caracteres ✅
     const DATA_VENCIMENTO = this.gerarData(recordset.dataVencimentoBoleto) // 10.3J | do 92 ao 99 caracteres ✅
-    const VALOR_TITULO = this.formatarValorFinanceiro(recordset.valor, 15) // 11.3J | do 100 ao 114 caracteres ✅
-    const DESCONTO = formatarNum(0, 15) // 12.3J | do 115 a 129 caracteres ✅
-    const ACRESCIMOS = formatarNum(0, 15) // 13.3J | do 130 a 144 caracteres ✅
+    const VALOR_TITULO = formatarValorFinanceiro(recordset.valor, 15) // 11.3J | do 100 ao 114 caracteres ✅
+    const DESCONTO = formatarValorFinanceiro(0, 15) // 12.3J | do 115 a 129 caracteres ✅
+    const ACRESCIMOS = formatarValorFinanceiro(0, 15) // 13.3J | do 130 a 144 caracteres ✅
     const DATA_PAGAMENTO = this.gerarData(recordset.dataPagamento) // 14.3J | do 145 a 152 caracteres ✅
-    const VALOR_PAGAMENTO = this.formatarValorFinanceiro(recordset.valor, 15) // 15.3J | do 153 a 167 caracteres ✅
+    const VALOR_PAGAMENTO = formatarValorFinanceiro(recordset.valor, 15) // 15.3J | do 153 a 167 caracteres ✅
     const QUANTIDADE_MOEDA = formatarNum('000000000000000', 15) // 16.3J | do 168 a 182 caracteres ✅
     const REFERENCIA_PAGADOR = formatarAlfa(recordset.id.replace(/-/g, ''), 20) // 17.3J | do 183 a 202 caracteres ✅
     const NOSSO_NUMERO = formatarAlfa('', 20) // 18.3J | do 203 a 222 caracteres
@@ -286,12 +288,12 @@ export class MyCNABGenerator {
     this.lines.push(linha)
   }
 
-  private segmentoJ52(ultimoLote: number, recordset: SegmentoJ) {
+  private segmentoJ52(ultimoLote: number, recordset: SegmentoJO) {
     this.sequencia++
 
     const regexCNPJ = /^\d{14}$/
 
-    const LOTE = formatarNum(ultimoLote + 1, 4) // 02.4.J52 | do 4 ao 7 caracteres ✅
+    const LOTE = formatarNum(ultimoLote, 4) // 02.4.J52 | do 4 ao 7 caracteres ✅
     const REGISTRO = '3' // 03.4.J52 | do 8 ao 8 caracteres ✅
     const NUMERO_REGISTRO = formatarNum(this.sequencia, 5) // 04.4.J52 | do 9 ao 13 caracteres ✅
     const SEGMENTO = 'J' // 05.4.J52 | do 14 ao 14 caracteres ✅
@@ -341,12 +343,12 @@ export class MyCNABGenerator {
     this.lines.push(linha)
   }
   
-  private trailerLote(ultimoLote: number, quantidadeRegistros: number, valorTotal: number) {
-    const LOTE_SERVICO = formatarNum(ultimoLote + 1, 4) // 02.5 | do 4 a 7 caracteres ✅
+  private trailerLote(ultimoLote: number, quantidadeRegistros: number, valorTotal: number, segmentoJ: boolean = true) {
+    const LOTE_SERVICO = formatarNum(ultimoLote, 4) // 02.5 | do 4 a 7 caracteres ✅
     const TIPO_REGISTRO = '5' // 03.5 | do 8 a 8 caracteres ✅
     const CNAB04 = formatarAlfa('', 9) // 04.5 | do 9 ao 17 caracteres ✅
-    const QUANTIDADE_REGISTROS = formatarNum((quantidadeRegistros * 2) + 2, 6) // 05.5 | do 18 a 23 caracteres ✅
-    const SOMATORIA_VALORES = this.formatarValorFinanceiro(valorTotal, 18) // 06.5 | do 24 a 41 caracteres ✅
+    const QUANTIDADE_REGISTROS = segmentoJ ? formatarNum((quantidadeRegistros * 2) + 2, 6) : formatarNum(quantidadeRegistros + 2, 6) // 05.5 | do 18 a 23 caracteres ✅
+    const SOMATORIA_VALORES = formatarValorFinanceiro(valorTotal, 18) // 06.5 | do 24 a 41 caracteres ✅
     const SOMATORIA_QUANTIDADE_MOEDAS = '000000000000000000' // 07.5 | do 42 a 59 caracteres ✅
     const NUMERO_AVISO_DEBITO = '000000' // 08.5 | do 60 a 65 caracteres ✅
     const CNAB09 = formatarAlfa('', 165) // 09.5 | do 66 a 230 caracteres ✅
@@ -399,28 +401,187 @@ export class MyCNABGenerator {
     this.lines.push(linha)
   }
 
-  gerarCnab(ultimoLote: number, formaLancamento: '31' | '30', recordsets: SegmentoJ[]) {
+  private headerLoteO(ultimoLote: number) {
+    const LOTE = formatarNum(ultimoLote, 4) // 02.1 | do 4 ao 7 caracteres ✅
+    const TIPO_REGISTRO = '1' // 03.1 | do 8 ao 8 caracteres ✅
+    const TIPO_OPERACAO = 'C' // 04.1 | do 9 ao 9 caracteres ✅
+    const TIPO_SERVICO = '98' // 05.1 | do 10 ao 11 caracteres ✅
+    const FORMA_LANCAMENTO = '11' // 06.1 | do 12 ao 13 caracteres ✅
+    const LAYOUT_LOTE = '043' // 07.1 | do 14 ao 16 caracteres ✅
+    const CNAB08 = formatarAlfa('', 1) // 08.1 | do 17 ao 17 caracteres ✅
+    const MENSAGEM = formatarAlfa('', 40) // 18.1 | do 103 ao 142 caracteres ✅
+    const LOGRADOURO = formatarAlfa('', 30) // 19.1 | do 143 ao 172 caracteres ✅
+    const NUMERO = formatarNum('00000', 5) // 20.1 | do 173 ao 177 caracteres ✅
+    const COMPLEMENTO = formatarAlfa('', 15) // 21.1 | do 178 ao 192 caracteres ✅
+    const CIDADE = formatarAlfa('', 20) // 22.1 | do 193 ao 212 caracteres ✅
+    const CEP = formatarNum('00000', 5) // 23.1 | do 213 ao 217 caracteres ✅
+    const COMPLEMENTO_CEP = formatarAlfa('', 3) // 24.1 | do 218 ao 220 caracteres ✅
+    const ESTADO = formatarAlfa('', 2) // 25.1 | do 221 ao 222 caracteres ✅
+    const CNAB26 = formatarAlfa('', 8) // 26.1 | do 223 ao 230 caracteres ✅
+    const OCORRENCIAS = formatarNum('0000000000', 10) // 27.1 | do 231 ao 240 caracteres ✅
+
+    const linha = [
+      BANCO,
+      LOTE,
+      TIPO_REGISTRO,
+      TIPO_OPERACAO,
+      TIPO_SERVICO,
+      FORMA_LANCAMENTO,
+      LAYOUT_LOTE,
+      CNAB08,
+      TIPO_INSCRICAO,
+      INSCRICAO,
+      NUMERO_CONVENIO,
+      CODIGO_CONVENIO,
+      USO_BANCO_CONVENIO,
+      ARQUITO_TESTE_CONVENIO,
+      AGENCIA,
+      DV_AGENCIA,
+      CONTA_CORRENTE,
+      DV_CONTA_CORRENTE,
+      DV_AGENCIA_CONTA,
+      NOME_EMPRESA,
+      MENSAGEM,
+      LOGRADOURO,
+      NUMERO,
+      COMPLEMENTO,
+      CIDADE,
+      CEP,
+      COMPLEMENTO_CEP,
+      ESTADO,
+      CNAB26,
+      OCORRENCIAS,
+    ].join('')
+
+    if (linha.length !== 240) {
+      throw new Error(`Linha Header do Lote O com tamanho inválido: ${linha.length}`)
+    }
+
+    this.lines.push(linha)
+  }
+
+  private segmentoO(ultimoLote: number, recordset: SegmentoJO) {
+    this.sequencia++
+
+    const LOTE = formatarNum(ultimoLote, 4) // 02.3O | do 4 ao 7 caracteres ✅
+    const TIPO_REGISTRO = '3' // 03.3O | do 8 ao 8 caracteres ✅
+    const NUMERO_REGISTRO = formatarNum(this.sequencia, 5) // 04.3O | do 9 ao 13 caracteres ✅
+    const SEGMENTO = 'O' // 05.3O | do 14 ao 14 caracteres ✅
+    const TIPO_MOVIMENTO = '0' // 06.3O | do 15 ao 15 caracteres ✅
+    const COD_MOVIMENTO = '00' // 07.3O | do 16 ao 17 caracteres ✅
+    const CODIGO_BARRAS = formatarNum(String(recordset.codigoBarras).replace(/\D/g, ''), 44) // 08.3O | do 18 ao 61 caracteres ✅
+    const NOME_ORGAO = formatarAlfa(recordset.orgao, 30) // 09.3O | do 62 ao 91 caracteres ✅
+    const DATA_VENCIMENTO = this.gerarData(recordset.dataVencimentoBoleto) // 10.3O | do 92 ao 99 caracteres ✅
+    const DATA_PAGAMENTO = this.gerarData(new Date()) // 11.3O | do 100 ao 107 caracteres ✅
+    const VALOR_PAGAMENTO = formatarValorFinanceiro(recordset.valor, 15) // 12.3O | do 108 ao 122 caracteres ✅
+    const NUMERO_EMPRESA = formatarAlfa(recordset.id.replace(/-/g, ''), 20) // 13.3O | do 123 a 142 caracteres ✅
+    const NUMERO_BANCO = formatarAlfa('', 20) // 14.3O | do 143 a 162 caracteres
+    const CNAB15 = formatarAlfa('', 68) // 15.3O | do 163 a 230 caracteres ✅
+    const OCORRENCIAS = formatarNum('0000000000', 10) // 16.3O | do 231 a 240 caracteres ✅
+
+    const linha = [
+      BANCO,
+      LOTE,
+      TIPO_REGISTRO,
+      NUMERO_REGISTRO,
+      SEGMENTO,
+      TIPO_MOVIMENTO,
+      COD_MOVIMENTO,
+      CODIGO_BARRAS,
+      NOME_ORGAO,
+      DATA_VENCIMENTO,
+      DATA_PAGAMENTO,
+      VALOR_PAGAMENTO,
+      NUMERO_EMPRESA,
+      NUMERO_BANCO,
+      CNAB15,
+      OCORRENCIAS,
+    ].join('')
+
+    if (linha.length !== 240) {
+      throw new Error(`Linha Segmento O (sequência ${this.sequencia}) com tamanho inválido: ${linha.length}`)
+    }
+
+    this.lines.push(linha)
+  }
+
+  private somarValores(registros: SegmentoJO[]) {
+    return registros.reduce((a, b) => a + b.valor, 0)
+  }
+
+  gerarCnab(ultimoArquivoGerado: number, recordsets: SegmentoJO[]) {
     this.lines = []
 
-    this.headerArquivo(new Date(), ultimoLote)
-    this.headerLoteJ(ultimoLote, formaLancamento)
+    this.headerArquivo(new Date(), ultimoArquivoGerado)
 
-    recordsets.forEach((recordset) => {
-      this.segmentoJ(ultimoLote, recordset)
-      this.segmentoJ52(ultimoLote, recordset)
-    })
+    const registerJFormaLancamento31 = recordsets.filter((record) =>
+      !record.codigoBarras.startsWith('001') &&
+      !record.codigoBarras.startsWith('8')
+    )
 
-    console.log(recordsets.length)
+    const registerJFormaLancamento30 = recordsets.filter((record) =>
+      !record.codigoBarras.startsWith('8') &&
+      record.codigoBarras.startsWith('001')
+    )
 
-    const quantidadeRegistros = recordsets.length
-    const valorTotal = recordsets.reduce((acumulador, objetoAtual) => {
-      return acumulador + objetoAtual.valor
-    }, 0)
+    const registerSegmentoO = recordsets.filter((record) =>
+      record.codigoBarras.startsWith('8')
+    )
 
-    this.trailerLote(ultimoLote, quantidadeRegistros, valorTotal)
+    let loteAtual = 0
+
+    if (registerJFormaLancamento31.length > 0) {
+      loteAtual += 1
+      this.sequencia = 0
+
+      this.headerLoteJ(loteAtual, '31')
+
+      registerJFormaLancamento31.forEach((recordset) => {
+        this.segmentoJ(loteAtual, recordset)
+        this.segmentoJ52(loteAtual, recordset)
+      })
+      
+      const quantidadeRegistros = registerJFormaLancamento31.length
+      const valorTotal = this.somarValores(registerJFormaLancamento31)
+
+      this.trailerLote(loteAtual, quantidadeRegistros, valorTotal)
+    }
+
+    if (registerJFormaLancamento30.length > 0) {
+      loteAtual += 1
+      this.sequencia = 0
+
+      this.headerLoteJ(loteAtual, '30')
+
+      registerJFormaLancamento30.forEach((recordset) => {
+        this.segmentoJ(loteAtual, recordset)
+        this.segmentoJ52(loteAtual, recordset)
+      })
+      
+      const quantidadeRegistros = registerJFormaLancamento30.length
+      const valorTotal = this.somarValores(registerJFormaLancamento30)
+
+      this.trailerLote(loteAtual, quantidadeRegistros, valorTotal)
+    }
+
+    if (registerSegmentoO.length > 0) {
+      loteAtual += 1
+      this.sequencia = 0
+
+      this.headerLoteO(loteAtual) // Aqui sempre vai ser 11
+
+      registerSegmentoO.forEach((recordset) => {
+        this.segmentoO(loteAtual, recordset)
+      })
+      
+      const quantidadeRegistros = registerSegmentoO.length
+      const valorTotal = this.somarValores(registerSegmentoO)
+
+      this.trailerLote(loteAtual, quantidadeRegistros, valorTotal, false)
+    }
 
     const totalLinhasArquivo = this.lines.length + 1
-    this.trailerArquivo(1, totalLinhasArquivo)
+    this.trailerArquivo(loteAtual, totalLinhasArquivo)
 
     return this.lines.join('\r\n')
   }

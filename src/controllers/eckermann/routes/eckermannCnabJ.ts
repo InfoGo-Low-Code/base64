@@ -1,8 +1,7 @@
 import { FastifyZodTypedInstance } from "@/@types/fastifyZodTypedInstance"
 import { z } from "zod"
 import { getEckermannConnection } from "@/database/eckermann"
-import { TecnoJurisSchema } from "@/schemas/eckermann/tecnoJurisSchema"
-import { MyCNABGenerator, SegmentoJ } from "@/utils/eckermann/myCnab240Generator"
+import { MyCNABGenerator, SegmentoJO } from "@/utils/eckermann/myCnab240Generator"
 
 // =========================
 // Função de próx. dia útil
@@ -41,23 +40,23 @@ export function eckermannCnabJ(app: FastifyZodTypedInstance) {
     async (_, reply) => {
       const db = await getEckermannConnection()
 
-      const { recordset: recordsetCnab31 } = await db.query<SegmentoJ[]>(`
+      const { recordset } = await db.query<SegmentoJO[]>(`
         SELECT
           id,
           codigoBarras,
+          linhaDigitavel,
           nomeBeneficiario,
           inscricaoBeneficiario,
           dataVencimentoBoleto,
           dataPagamento,
-          valor
+          valor,
+          orgao
         FROM dbo.eckermann_tecnojuris
         WHERE codigoBarras IS NOT NULL
-          AND nomeBeneficiario IS NOT NULL
           -- AND efetivado = 0
-          AND codigoBarras NOT LIKE '001%'
       `)
 
-      if (!recordsetCnab31.length) {
+      if (!recordset.length) {
         return reply.badRequest('Nenhum boleto disponível para CNAB')
       }
 
@@ -75,9 +74,9 @@ export function eckermannCnabJ(app: FastifyZodTypedInstance) {
       }
 
       const generator = new MyCNABGenerator()
-      const cnabContent = generator.gerarCnab(ultimoLote, '31', recordsetCnab31)
+      const cnabContent = generator.gerarCnab(ultimoLote, recordset)
 
-      const filename = `CNAB240_TECNOJURIS_${Date.now()}.REM`
+      const filename = `CNAB240_TECNOJURIS_31_${Date.now()}.REM`
 
       return reply.send({
         filename,

@@ -3,8 +3,10 @@ export function parseNomeArquivo(nome: string):
   // remove extensão
   const semExt = nome.replace(/\.pdf$/i, '').trim()
 
+  const nameReplaceSemExt = semExt.replace(/[–—]/g, '-')
+
   // split bruto
-  const parts = semExt.split('-').map(p => p.trim())
+  const parts = nameReplaceSemExt.split('-').map(p => p.trim())
 
   if (parts.length < 3) {
     return null

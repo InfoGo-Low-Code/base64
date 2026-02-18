@@ -17,6 +17,13 @@ import { basename } from 'node:path'
 import { camposConcat } from '@/utils/camposConcat'
 import { createSmartKey } from '@/utils/eckermann/createSmartKey'
 
+const duplicatedReturnSchema = z.object({
+  codigo_identificacao: z.string(),
+  valor: z.number(),
+  recibo_parcela: z.string(),
+  count: z.number(),
+})
+
 export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
   app.post(
     '/eckermann/returnExcelDataEckermannMultiple',
@@ -32,6 +39,9 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
             excel: z.array(planilhaHoEckermannResponse),
           }),
           400: zodErrorBadRequestResponseSchema,
+          409: fastifyErrorResponseSchema.extend({
+            duplicatedData: z.array(duplicatedReturnSchema),
+          }),
           422: fastifyErrorResponseSchema.extend({
             erros: z.array(z.object({
               linha: z.number(),
@@ -447,7 +457,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           const registroFinal = {
             ...baseObject,
             id: camposConcat(baseObject, recibo_parcela),
-            smart_key: createSmartKey(baseObject),
+            smart_key: createSmartKey(baseObject,recibo_parcela),
             recibo_parcela,
           }
 
@@ -458,6 +468,42 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
             uniqueExcel.push(registroFinal as PlanilhaHoEckermannResponse)
           }
         })
+
+        const countMap = new Map()
+        const dataMap = new Map()
+
+        uniqueExcel.forEach(register => {
+          const key = register.smart_key
+
+          countMap.set(key, (countMap.get(key) || 0) + 1)
+
+          // guarda o primeiro registro dessa chave
+          if (!dataMap.has(key)) {
+            dataMap.set(key, register)
+          }
+        })
+
+        const duplicados = [...countMap.entries()]
+          .filter(([_, count]) => count > 1)
+          .map(([smart_key, count]) => {
+            const base = dataMap.get(smart_key)
+
+            return {
+              codigo_identificacao: base.codigo_identificacao,
+              valor: base.valor,
+              recibo_parcela: base.recibo_parcela,
+              count
+            }
+          })
+
+        if (duplicados.length > 0) {
+          return reply.status(409).send({
+            statusCode: 409,
+            message: 'Foram encontrados registros duplicados no arquivo',
+            error: 'Conflit',
+            duplicatedData: duplicados,
+          })
+        }
 
         if (erros.length > 0) {
           return reply.status(422).send({
