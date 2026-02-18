@@ -60,7 +60,7 @@ export function uploadArchive(app: FastifyZodTypedInstance) {
 
         unlinkSync(filePath)
 
-        return reply.status(201).send()
+        return reply.status(201).send(null)
       } catch (error) {
         unlinkSync(filePath)
 

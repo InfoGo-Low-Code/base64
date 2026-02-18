@@ -5,7 +5,7 @@ import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRe
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 import ConvertAPI from 'convertapi'
 import { env } from '@/env'
-import { lookup, extension } from 'mime-types'
+import { lookup } from 'mime-types'
 import { extname } from 'node:path'
 import { unlink, writeFile } from 'node:fs/promises'
 

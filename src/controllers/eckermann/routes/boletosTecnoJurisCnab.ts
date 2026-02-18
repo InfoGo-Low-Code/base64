@@ -197,8 +197,15 @@ async function processFile(
 
       if (regexCNPJ.test(llmResponse) || llmResponse.includes(';')) {
         beneficiario = await buscarInscricao(app, llmResponse, db)
-      } else {
+      } else if (llmResponse) {
         orgao = llmResponse
+      } else {
+        beneficiario = {
+          nomeBeneficiario: '',
+          inscricaoBeneficiario: '',
+        }
+
+        orgao = ''
       }
 
       // console.log({ beneficiario, name })
@@ -206,7 +213,7 @@ async function processFile(
       nomeBeneficiario = beneficiario.nomeBeneficiario
       inscricaoBeneficiario = beneficiario.inscricaoBeneficiario
 
-      await sleep(7000)
+      await sleep(10000)
 
       // Regexes para validação e extração (mantidas do seu código)
       const regexLinhaDigitavel = /\b\d{5}[.\s]?\d{5}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d{5}[.\s]?\d{6}[.\s]?\d[.\s]?\d{14}\b/g
@@ -275,12 +282,13 @@ async function processFile(
         idPastaProcesso.includes('NX') ||
         idPastaProcesso.includes('BLU') ||
         idPastaProcesso.includes('LFT') ||
+        idPastaProcesso.includes('MULTI') ||
         (idPastaProcesso.includes('C6') && !idPastaProcesso.includes('BUSCA'))
       ) {
         const parts = idPastaProcesso.split(/[\s-]/).filter(p => p.trim() !== '')
         if (parts.length >= 2) {
           idPastaProcesso = `${parts[0].trim()} - ${parts[1].trim()}`
-        }
+        } 
       }
     
       if (idPastaProcesso.includes('C6 BUSCA')) {
@@ -440,8 +448,11 @@ export function boletosTecnoJurisCnab(app: FastifyZodTypedInstance) {
       const db = await getEckermannConnection()
 
       const infoBoletos = await Promise.all(
-        files.map(file =>
-          limit(() => processFile(file, accessTokenGraph, app, db))
+        files.map((file, idx) =>
+          limit(() => {
+            console.log(idx)
+            return processFile(file, accessTokenGraph, app, db)
+          })
         )
       )
 

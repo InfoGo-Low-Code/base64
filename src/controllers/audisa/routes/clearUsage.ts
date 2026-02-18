@@ -1,5 +1,5 @@
 import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
-import { clearUserUsage } from '@/utils/audisa/routeUsage'
+import { clearUserUsage, getUserUsage } from '@/utils/audisa/routeUsage'
 import { z } from 'zod'
 
 export function clearUsage(app: FastifyZodTypedInstance) {
@@ -17,7 +17,9 @@ export function clearUsage(app: FastifyZodTypedInstance) {
     async (_, reply) => {
       clearUserUsage()
 
-      reply.send()
+      const userUsage = getUserUsage()
+
+      reply.send({ userUsage })
     },
   )
 }

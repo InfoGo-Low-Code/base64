@@ -1,4 +1,4 @@
-import postgres, { Options } from 'postgres'
+import postgres from 'postgres'
 import { env } from '@/env'
 
 const { DB_URL_COVABRA } = env

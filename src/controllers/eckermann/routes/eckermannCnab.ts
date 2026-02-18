@@ -2,7 +2,6 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { getEckermannConnection } from '@/database/eckermann'
 import { TecnoJurisSchema, tecnoJurisSchema } from '@/schemas/eckermann/tecnoJurisSchema'
 import { CNAB240Generator } from '@/utils/eckermann/cnab240Generator'
-import { writeFile } from 'node:fs/promises'
 import { z } from 'zod'
 
 export function eckermannCnab(app: FastifyZodTypedInstance) {

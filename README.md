@@ -1,9 +1,7 @@
 # Base64 - InfoGo
 
 ## Ideia
-Baseado em uma necessidade de projetos da empresa **InfoGo**, decidimos criar um mini-módulo **Backend** em **JavaScript** para lidar com arquivos e URL que são arquivos.
-
-Ao enviar o Arquivo ou URL, o módulo retorna o Arquivo em Base64, que pode ser usado em outras aplicações
+Baseado em uma necessidade de projetos da empresa **InfoGo**, decidimos criar um mini-módulo **Backend** em **JavaScript** para lidar com as demandas e necessidades de projetos.
 
 ## 🚀 Tecnologias
 Esse projeto foi desenvolvido com as seguintes tecnologias:
