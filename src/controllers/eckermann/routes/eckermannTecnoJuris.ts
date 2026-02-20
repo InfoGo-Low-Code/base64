@@ -3,7 +3,7 @@ import { FastifyZodTypedInstance } from '@/@types/fastifyZodTypedInstance'
 import { fastifyErrorResponseSchema } from '@/schemas/errors/fastifyErrorResponseSchema'
 import { zodErrorBadRequestResponseSchema } from '@/schemas/errors/zodErrorBadRequestResponseSchema'
 import { randomUUID } from 'node:crypto'
-import { encryptTecnoJuris } from '@/utils/eckermann/cryptoTecnoJuris'
+import { encryptTecnoJuris, generateDeterministicId } from '@/utils/eckermann/cryptoTecnoJuris'
 
 export type JwtEckermannSchema = {
   usuario: {
@@ -464,10 +464,12 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
             const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${node.processoId}`)
 
+            const id = generateDeterministicId([cliente, data, pasta, String(valor), node.processoId])
+
             console.log({ encrypted, iv, idx })
 
             return {
-              id: randomUUID(),
+              id,
               cliente,
               descricao: node.descricao.trim(),
               data,

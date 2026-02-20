@@ -53,7 +53,7 @@ export function eckermannCnabJ(app: FastifyZodTypedInstance) {
           orgao
         FROM dbo.eckermann_tecnojuris
         WHERE codigoBarras IS NOT NULL
-          -- AND efetivado = 0
+          AND efetivado = 0
       `)
 
       if (!recordset.length) {
