@@ -464,7 +464,8 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
             const { encrypted, iv } = encryptTecnoJuris(`${cliente};${data};${pasta};${valor};${node.processoId}`)
 
-            const id = generateDeterministicId([cliente, data, pasta, String(valor), node.processoId])
+            // const id = generateDeterministicId([cliente, data, pasta, String(valor), node.processoId])
+            const id = randomUUID()
 
             console.log({ encrypted, iv, idx })
 
