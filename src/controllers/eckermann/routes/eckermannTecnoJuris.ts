@@ -144,7 +144,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           },
         )
 
-        console.log(jwt_token)
+        // console.log(jwt_token)
 
         const dataInicial = new Date()
 
@@ -193,7 +193,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           const connection = data.data.valoresConnection
           const nodes = connection.nodes
 
-          console.log(nodes[0].createdAt)
+          // console.log(nodes[0].createdAt)
 
           const hoje = new Date()
 
@@ -237,7 +237,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
         const dataTodos = new Date()
 
-        console.log(`Tempo para pegar tudo: ${dataTodos.getTime() - dataInicial.getTime()}ms`)
+        console.log(`Tempo para obter tudo: ${dataTodos.getTime() - dataInicial.getTime()}ms`)
 
         const pessoaIds = Array.from(
           new Set(allNodes.map((n) => n.pessoaId).filter(Boolean)),
@@ -275,7 +275,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
         const dataPessoas = new Date()
 
-        console.log(`Tempo para pegar pessoas: ${dataPessoas.getTime() - dataTodos.getTime()}ms`)
+        console.log(`Tempo para obter pessoas: ${dataPessoas.getTime() - dataTodos.getTime()}ms`)
 
         const pessoaMap = new Map<string, string>()
         pessoasNomesIds.forEach((p) => {
@@ -319,7 +319,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
 
         const dataDistribuicoes = new Date()
 
-        console.log(`Tempo para pegar distribuições: ${dataDistribuicoes.getTime() - dataPessoas.getTime()}ms`)
+        console.log(`Tempo para obter distribuições: ${dataDistribuicoes.getTime() - dataPessoas.getTime()}ms`)
 
         const distribuicaoMap = new Map<string, string>()
         distribuicoesNomesIds.forEach((p) => {
@@ -410,7 +410,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
           })
         })
 
-        console.log(`Tempo para pegar pastas/processos: ${dataPastasProcessos.getTime() - dataDistribuicoes.getTime()}ms`)
+        console.log(`Tempo para obter pastas/processos: ${dataPastasProcessos.getTime() - dataDistribuicoes.getTime()}ms`)
         
         const transformedData: DataReturn[] = allNodes
           .filter((node) => node !== null)
@@ -467,7 +467,7 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             // const id = generateDeterministicId([cliente, data, pasta, String(valor), node.processoId])
             const id = randomUUID()
 
-            console.log({ encrypted, iv, idx })
+            // console.log({ encrypted, iv, idx })
 
             return {
               id,
@@ -493,7 +493,22 @@ export function eckermannTecnoJuris(app: FastifyZodTypedInstance) {
             }
           })
 
-        console.log(transformedData.length)
+        function getDuplicates(array: DataReturn[]) {
+          const seen = new Set<string>()
+          const duplicates = new Set<string>()
+
+          for (const item of array) {
+            if (seen.has(item.id)) {
+              duplicates.add(item.id)
+            } else {
+              seen.add(item.id)
+            }
+          }
+
+          return [...duplicates]
+        }
+
+        console.log(getDuplicates(transformedData))
 
         return reply.send({
           registerAmount: transformedData.length,

@@ -35,5 +35,5 @@ export function generateDeterministicId(fields: string[]) {
     .digest("base64url")
 
   // 3️⃣ Retorna 20 caracteres fixos
-  return hash.slice(0, 20)
+  return hash.slice(-20)
 }

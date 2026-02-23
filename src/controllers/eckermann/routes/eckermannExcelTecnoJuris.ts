@@ -93,8 +93,7 @@ export function eckermannExcelTecnoJuris(app: FastifyZodTypedInstance) {
               ELSE 
                   DATEADD(DAY, 1, data)
           END AS 'DIA DO PAGAMENTO',
-          smartKey AS 'ID ÚNICO',
-          iv AS 'CHAVE'
+          smartKey AS 'ID ÚNICO'
           FROM dbo.eckermann_tecnojuris
           WHERE id IN ('${idsFormatados}')
         `)
