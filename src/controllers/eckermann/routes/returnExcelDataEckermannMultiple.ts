@@ -24,6 +24,7 @@ const duplicatedReturnSchema = z.object({
   data_credito: z.date(),
   cliente: z.string(),
   count: z.number(),
+  lines: z.array(z.number()),
 })
 
 export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
@@ -84,6 +85,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
 
       try {
         let linhaAtual = 0
+        let linhaRealExcel = 0
         let campoAtual = ''
 
         const { data } = await app.axios.get(url, {
@@ -99,7 +101,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
 
-        const dataXlsx: PlanilhaHoEckermannBody[] = utils.sheet_to_json(
+        const dataXlsxRaw: PlanilhaHoEckermannBody[] = utils.sheet_to_json(
           worksheet,
           {
             header: [
@@ -123,6 +125,11 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           },
         )
 
+        const dataXlsx = dataXlsxRaw.map((row, index) => ({
+          ...row,
+          __linha_excel: index + 2 // 👈 AQUI está a linha real
+        }))
+
         const semDuplicados = Array.from(
           new Map(
             dataXlsx.map((row) => [JSON.stringify(row), row])
@@ -131,7 +138,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
 
         semDuplicados.forEach((line, index) => {
           // define a linha real na planilha
-          linhaAtual = index + 2 // header na linha 1 → range inicia na linha 2
+          linhaAtual = line.__linha_excel // header na linha 1 → range inicia na linha 2
 
           // === CLIENTE === //
           campoAtual = 'CLIENTE'
@@ -461,6 +468,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
             id: camposConcat(baseObject, recibo_parcela),
             smart_key: createSmartKey(baseObject, recibo_parcela),
             recibo_parcela,
+            linha_excel: linhaAtual
           }
 
           if (seenIds.has(registroFinal.id)) {
@@ -471,13 +479,18 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           }
         })
 
-        const countMap = new Map()
-        const dataMap = new Map()
+        const countMap = new Map<string, number[]>()
+        const dataMap = new Map<string, any>()
 
-        uniqueExcel.forEach(register => {
+        uniqueExcel.forEach((register) => {
           const key = register.smart_key
 
-          countMap.set(key, (countMap.get(key) || 0) + 1)
+          // guarda índices
+          if (!countMap.has(key)) {
+            countMap.set(key, [register.linha_excel])
+          } else {
+            countMap.get(key)!.push(register.linha_excel)
+          }
 
           // guarda o primeiro registro dessa chave
           if (!dataMap.has(key)) {
@@ -486,8 +499,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
         })
 
         const duplicados = [...countMap.entries()]
-          .filter(([_, count]) => count > 1)
-          .map(([smart_key, count]) => {
+          .filter(([_, lines]) => lines.length > 1)
+          .map(([smart_key, lines]) => {
             const base = dataMap.get(smart_key)
 
             return {
@@ -496,7 +509,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
               recibo_parcela: base.recibo_parcela,
               data_credito: base.data_vencimento,
               cliente: base.cliente,
-              count
+              count: lines.length,
+              lines // 👈 agora você tem os índices também
             }
           })
 

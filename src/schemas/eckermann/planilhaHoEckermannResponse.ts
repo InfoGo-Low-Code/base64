@@ -18,6 +18,7 @@ export const planilhaHoEckermannResponse = z.object({
   empresa: z.string(),
   valor_validado: z.number(),
   smart_key: z.string(),
+  linha_excel: z.number(),
 })
 
 export type PlanilhaHoEckermannResponse = z.infer<
