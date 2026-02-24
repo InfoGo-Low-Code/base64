@@ -21,6 +21,8 @@ const duplicatedReturnSchema = z.object({
   codigo_identificacao: z.string(),
   valor: z.number(),
   recibo_parcela: z.string(),
+  data_credito: z.date(),
+  cliente: z.string(),
   count: z.number(),
 })
 
@@ -457,7 +459,7 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
           const registroFinal = {
             ...baseObject,
             id: camposConcat(baseObject, recibo_parcela),
-            smart_key: createSmartKey(baseObject,recibo_parcela),
+            smart_key: createSmartKey(baseObject, recibo_parcela),
             recibo_parcela,
           }
 
@@ -492,6 +494,8 @@ export function returnExcelDataEckermannMultiple(app: FastifyZodTypedInstance) {
               codigo_identificacao: base.codigo_identificacao,
               valor: base.valor,
               recibo_parcela: base.recibo_parcela,
+              data_credito: base.data_vencimento,
+              cliente: base.cliente,
               count
             }
           })

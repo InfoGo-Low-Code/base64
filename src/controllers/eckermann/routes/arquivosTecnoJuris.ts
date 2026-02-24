@@ -183,8 +183,8 @@ export function arquivosTecnojuris(app: FastifyZodTypedInstance) {
           }
         )
 
-        const proxDiaUtilString = '23.02.2026'
-        // const proxDiaUtilString = `${(proxDiaUtil.getDate()).toString().padStart(2, '0')}.${(proxDiaUtil.getMonth() + 1).toString().padStart(2, '0')}.${proxDiaUtil.getFullYear()}`
+        // const proxDiaUtilString = '23.02.2026'
+        const proxDiaUtilString = `${(proxDiaUtil.getDate()).toString().padStart(2, '0')}.${(proxDiaUtil.getMonth() + 1).toString().padStart(2, '0')}.${proxDiaUtil.getFullYear()}`
 
         console.warn({ proxDiaUtilString })
 
