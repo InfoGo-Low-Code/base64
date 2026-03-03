@@ -7,7 +7,8 @@ import ConvertAPI from 'convertapi'
 import { env } from '@/env'
 import { lookup } from 'mime-types'
 import { extname } from 'node:path'
-import { unlink, writeFile } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
+import { unlinkSync } from 'node:fs'
 
 export function fileExtensionConverter(app: FastifyZodTypedInstance) {
   app.post(
@@ -107,7 +108,7 @@ export function fileExtensionConverter(app: FastifyZodTypedInstance) {
           return reply.internalServerError(String(error))
         }
       } finally {
-        unlink(filePath)
+        base64File && unlinkSync(filePath)
       }
     },
   )
