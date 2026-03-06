@@ -64,6 +64,16 @@ const mapCampos = new Map([
   ['Razão Neutrófilos / Monócitos (NMR)', 'b9f43180-44d4-7866-f115-d4195b49bb23'],
 ])
 
+function getCampoId(nomeExame: string): string {
+  for (const [nomeCampo, id] of mapCampos.entries()) {
+    if (nomeExame.includes(nomeCampo)) {
+      return id
+    }
+  }
+
+  return ''
+}
+
 const metricasSchema = z.object({
   idCampo: z.string(),
   metrica: z.string(),
@@ -94,7 +104,7 @@ export function importExams(app: FastifyZodTypedInstance) {
       const metricasVetor = metrica.split(';')
 
       const metricas: MetricasSchema[] = nomesVetor.map((nome, idx) => ({
-        idCampo: mapCampos.get(nome) ?? '',
+        idCampo: getCampoId(nome),
         metrica: metricasVetor[idx] ?? '',
       }))
 
